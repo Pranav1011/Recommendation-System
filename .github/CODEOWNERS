@@ -1,0 +1,21 @@
+# Code owners for the recommendation engine project
+# These users will be automatically requested for review when someone opens a PR
+
+# Global owners
+* @yourusername
+
+# Data processing code
+/src/data/ @yourusername
+
+# Model code
+/src/models/ @yourusername
+/src/training/ @yourusername
+
+# API code
+/src/api/ @yourusername
+
+# CI/CD configuration
+/.github/workflows/ @yourusername
+
+# Documentation
+*.md @yourusername

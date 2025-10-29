@@ -1,0 +1,81 @@
+# Recommendation Engine Configuration
+
+# Data Configuration
+data:
+  raw_path: "data/raw"
+  processed_path: "data/processed"
+  embeddings_path: "data/embeddings"
+  dataset: "movielens-25m"  # or "movielens-1m" for testing
+  train_test_split: 0.8
+
+# Model Configuration
+model:
+  type: "two_tower"
+  embedding_dim: 128
+  user_tower:
+    hidden_dims: [256, 128]
+    dropout: 0.3
+  item_tower:
+    hidden_dims: [256, 128]
+    dropout: 0.3
+
+# Training Configuration
+training:
+  batch_size: 2048
+  learning_rate: 0.001
+  epochs: 20
+  optimizer: "adam"
+  weight_decay: 0.00001
+  early_stopping:
+    patience: 3
+    min_delta: 0.001
+  validation_split: 0.1
+
+# Vector Database Configuration
+vector_db:
+  provider: "qdrant"
+  host: "localhost"
+  port: 6333
+  collection_name: "movie-recommendations"
+  dimension: 128
+  metric: "cosine"
+
+# Cache Configuration
+cache:
+  provider: "redis"
+  host: "localhost"
+  port: 6379
+  db: 0
+  ttl: 3600  # seconds
+
+# API Configuration
+api:
+  host: "0.0.0.0"
+  port: 8080
+  workers: 4
+  reload: false
+
+# MLflow Configuration
+mlflow:
+  tracking_uri: "http://localhost:5000"
+  experiment_name: "recommendation-model"
+
+# Evaluation Metrics
+evaluation:
+  metrics:
+    - "precision@5"
+    - "precision@10"
+    - "recall@5"
+    - "recall@10"
+    - "ndcg@10"
+    - "map@10"
+  targets:
+    ndcg@10: 0.35
+    recall@10: 0.20
+    coverage: 0.40
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "json"
+  file: "logs/app.log"
