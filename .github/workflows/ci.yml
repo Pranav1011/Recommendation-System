@@ -85,11 +85,6 @@ jobs:
         image: qdrant/qdrant:latest
         ports:
           - 6333:6333
-        options: >-
-          --health-cmd "curl -f http://localhost:6333/healthz"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
       - uses: actions/checkout@v3
@@ -112,6 +107,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pytest-cov pytest-asyncio
+
+      - name: Wait for Qdrant to be ready
+        run: |
+          timeout 60 bash -c 'until nc -z localhost 6333; do echo "Waiting for Qdrant..."; sleep 2; done'
+          echo "Qdrant is ready!"
 
       - name: Run unit tests
         env:
