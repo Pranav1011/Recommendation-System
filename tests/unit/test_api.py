@@ -1,16 +1,15 @@
 """Unit tests for the FastAPI application."""
 
 import pytest
-from starlette.testclient import TestClient
+from fastapi.testclient import TestClient
 
 from src.api.main import app
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def client():
     """Create a test client for the FastAPI app."""
-    with TestClient(app) as test_client:
-        yield test_client
+    return TestClient(app)
 
 
 class TestRootEndpoints:
