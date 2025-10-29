@@ -32,6 +32,7 @@ prometheus-client==0.19.0
 pytest==7.4.0
 pytest-asyncio==0.21.0
 pytest-cov==4.1.0
+httpx==0.25.0
 locust==2.19.0
 
 # Storage (Optional S3-compatible)
