@@ -1,9 +1,11 @@
 """
 Pytest configuration and shared fixtures
 """
-import pytest
+
 import os
 from pathlib import Path
+
+import pytest
 
 
 @pytest.fixture(scope="session")
@@ -25,17 +27,10 @@ def sample_config():
         "data": {
             "raw_path": "data/raw",
             "processed_path": "data/processed",
-            "train_test_split": 0.8
+            "train_test_split": 0.8,
         },
-        "model": {
-            "type": "two_tower",
-            "embedding_dim": 128
-        },
-        "training": {
-            "batch_size": 2048,
-            "learning_rate": 0.001,
-            "epochs": 20
-        }
+        "model": {"type": "two_tower", "embedding_dim": 128},
+        "training": {"batch_size": 2048, "learning_rate": 0.001, "epochs": 20},
     }
 
 
@@ -45,7 +40,7 @@ def redis_config():
     return {
         "host": os.getenv("REDIS_HOST", "localhost"),
         "port": int(os.getenv("REDIS_PORT", 6379)),
-        "db": 0
+        "db": 0,
     }
 
 
@@ -55,7 +50,7 @@ def qdrant_config():
     return {
         "host": os.getenv("QDRANT_HOST", "localhost"),
         "port": int(os.getenv("QDRANT_PORT", 6333)),
-        "collection_name": "test-recommendations"
+        "collection_name": "test-recommendations",
     }
 
 
