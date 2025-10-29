@@ -80,6 +80,7 @@ logs/
 .coverage
 .pytest_cache/
 htmlcov/
+coverage.xml
 
 # OS
 .DS_Store
