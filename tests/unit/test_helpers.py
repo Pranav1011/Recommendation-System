@@ -1,7 +1,8 @@
 """Unit tests for helper utility functions."""
 
 import pytest
-from src.utils.helpers import validate_user_id, validate_item_id, normalize_score
+
+from src.utils.helpers import normalize_score, validate_item_id, validate_user_id
 
 
 class TestValidateUserId:
