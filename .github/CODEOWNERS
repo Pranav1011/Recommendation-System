@@ -2,20 +2,20 @@
 # These users will be automatically requested for review when someone opens a PR
 
 # Global owners
-* @yourusername
+* @Pranav1011
 
 # Data processing code
-/src/data/ @yourusername
+/src/data/ @Pranav1011
 
 # Model code
-/src/models/ @yourusername
-/src/training/ @yourusername
+/src/models/ @Pranav1011
+/src/training/ @Pranav1011
 
 # API code
-/src/api/ @yourusername
+/src/api/ @Pranav1011
 
 # CI/CD configuration
-/.github/workflows/ @yourusername
+/.github/workflows/ @Pranav1011
 
 # Documentation
-*.md @yourusername
+*.md @Pranav1011
