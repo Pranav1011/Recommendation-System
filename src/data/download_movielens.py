@@ -7,7 +7,6 @@ Supports both 25M (full) and 1M (testing) datasets.
 
 import argparse
 import logging
-import os
 import zipfile
 from pathlib import Path
 from typing import Literal
@@ -222,8 +221,8 @@ def main() -> None:
             logger.info(f"\n✓ Dataset downloaded to: {zip_path}")
 
         logger.info("\nNext steps:")
-        logger.info(f"  1. Run data processing: python src/data/processor.py")
-        logger.info(f"  2. Explore data: jupyter notebook notebooks/01_eda.ipynb")
+        logger.info("  1. Run data processing: python src/data/processor.py")
+        logger.info("  2. Explore data: jupyter notebook notebooks/01_eda.ipynb")
 
     except Exception as e:
         logger.error(f"\n✗ Failed to download dataset: {e}")
