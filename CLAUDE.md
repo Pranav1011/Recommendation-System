@@ -344,6 +344,45 @@ black --check src/ tests/
 isort --check-only src/ tests/
 ```
 
+#### 3.5. **⚠️ MANDATORY PRE-PUSH CHECKLIST**
+
+**CRITICAL**: Always run ALL checks before pushing to avoid CI failures!
+
+**Option 1: Use the automated script (RECOMMENDED)**
+```bash
+./scripts/pre-push-checks.sh
+```
+
+**Option 2: Run checks manually**
+```bash
+# 1. Check Black formatting
+black --check src/ tests/
+
+# 2. Check isort
+isort --check-only src/ tests/
+
+# 3. Run flake8 (critical errors)
+flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+
+# 4. Run flake8 (all issues)
+flake8 src/ --count --max-complexity=10 --max-line-length=127 --statistics
+
+# 5. Run unit tests with coverage
+pytest tests/unit/ -v --cov=src --cov-report=term
+
+# 6. Run integration tests
+pytest tests/integration/ -v
+```
+
+**Common Issues Caught by These Checks:**
+- Unused imports (F401)
+- Unused variables (F841)
+- Formatting issues (Black/isort)
+- Test failures
+- Coverage below 80%
+
+**User Requirement**: Always run these checks locally BEFORE pushing to feature branch!
+
 #### 4. **Commit Message Format**
 Follow conventional commits:
 - `feat:` - New feature
