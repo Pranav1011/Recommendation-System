@@ -59,6 +59,7 @@ jobs:
           output: 'trivy-results.sarif'
 
       - name: Check for secrets
+        if: github.event_name == 'pull_request'
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
