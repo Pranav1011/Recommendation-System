@@ -11,8 +11,6 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
 
 # Configure logging
 logging.basicConfig(
@@ -393,7 +391,7 @@ def main() -> None:
 
     try:
         processor = MovieLensProcessor(input_dir, args.dataset_size)
-        stats = processor.process(
+        processor.process(
             output_dir, test_size=args.test_size, temporal=not args.random_split
         )
 
