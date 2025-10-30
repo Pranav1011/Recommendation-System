@@ -29,6 +29,13 @@ Build a **production-grade recommendation system** with:
 - ✅ YES Docker, CI/CD, monitoring (resume value)
 - ✅ YES Vector DB, Redis (shows scale understanding)
 
+### 🚨 CRITICAL: Pre-Push Requirements
+**Before pushing ANY code to GitHub, ALWAYS run:**
+```bash
+./scripts/pre-push-checks.sh
+```
+This validates formatting, linting, and tests. **User requirement - do not skip!**
+
 ---
 
 ## 🎯 CURRENT STATE (As of 2025-01-29)
@@ -315,7 +322,24 @@ Recommendation-System/
 
 ### For AI Assistants Working on This Project
 
-#### 1. **ALWAYS Check Current Branch**
+#### 1. **🚨 MANDATORY: Run Pre-Push Checks Before EVERY Push**
+
+**CRITICAL - USER REQUIREMENT**: ALWAYS run the pre-push script before pushing to GitHub!
+
+```bash
+./scripts/pre-push-checks.sh
+```
+
+This script runs ALL the checks that CI will run:
+- Black formatting verification
+- isort import sorting verification
+- flake8 linting (critical + all errors)
+- Unit tests with coverage (must be ≥80%)
+- Integration tests
+
+**DO NOT push without running this script first!** CI failures waste time and create extra commits.
+
+#### 2. **Check Current Branch**
 ```bash
 git branch --show-current
 ```
@@ -323,30 +347,22 @@ git branch --show-current
 - Work on feature branches
 - Create PRs for all changes
 
-#### 2. **Testing Requirements**
+#### 3. **Testing Requirements**
 - ALL code must have tests
 - Maintain 100% coverage (80% minimum)
-- Run tests before committing:
-```bash
-pytest tests/unit/ -v --cov=src --cov-report=term
-pytest tests/integration/ -v
-```
+- Tests are automatically run by pre-push script
 
-#### 3. **Code Quality**
-- Format with Black and isort:
+#### 4. **Code Quality**
+- Format code before committing:
 ```bash
 black src/ tests/
 isort src/ tests/
 ```
-- Verify before pushing:
-```bash
-black --check src/ tests/
-isort --check-only src/ tests/
-```
+- Quality checks automatically run by pre-push script
 
-#### 3.5. **⚠️ MANDATORY PRE-PUSH CHECKLIST**
+#### 5. **Pre-Push Checklist Details**
 
-**CRITICAL**: Always run ALL checks before pushing to avoid CI failures!
+**ALWAYS run before pushing:**
 
 **Option 1: Use the automated script (RECOMMENDED)**
 ```bash
