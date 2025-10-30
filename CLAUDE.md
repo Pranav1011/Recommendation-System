@@ -86,14 +86,18 @@ This validates formatting, linting, and tests. **User requirement - do not skip!
 
 - **Test Configuration**:
   - `pytest.ini` - Test discovery and markers
+  - `.coveragerc` - Coverage configuration (excludes main() CLI functions)
   - `pyproject.toml` - Black + isort compatibility (`profile = "black"`)
-  - Coverage target: 80% (currently 100%)
+  - Coverage target: 80% minimum (currently 93%)
   - **IMPORTANT**: Coverage only runs on unit tests, NOT integration tests
+  - CLI main() functions excluded from coverage (common practice)
 
 #### 4. Configuration Files
 - `requirements.txt` - All dependencies including `httpx==0.25.0` (fixed TestClient issues)
 - `.gitignore` - Excludes most .md files, data, models, logs, coverage reports
+- `.coveragerc` - Coverage exclusions (main functions, `if __name__ == "__main__"`)
 - `pyproject.toml` - Formatting configuration (Black + isort)
+- `scripts/pre-push-checks.sh` - Automated pre-push validation (7 checks)
 
 ### 🚧 What's NOT Implemented Yet
 
@@ -369,7 +373,7 @@ isort src/ tests/
 ./scripts/pre-push-checks.sh
 ```
 
-**Option 2: Run checks manually**
+**Option 2: Run checks manually (7 steps)**
 ```bash
 # 1. Check Black formatting
 black --check src/ tests/
@@ -386,7 +390,10 @@ flake8 src/ --count --max-complexity=10 --max-line-length=127 --statistics
 # 5. Run unit tests with coverage
 pytest tests/unit/ -v --cov=src --cov-report=term
 
-# 6. Run integration tests
+# 6. Check coverage threshold (CRITICAL - CI will fail if <80%)
+coverage report --fail-under=80
+
+# 7. Run integration tests
 pytest tests/integration/ -v
 ```
 
@@ -395,7 +402,7 @@ pytest tests/integration/ -v
 - Unused variables (F841)
 - Formatting issues (Black/isort)
 - Test failures
-- Coverage below 80%
+- **Coverage below 80% (CI failure)**
 
 **User Requirement**: Always run these checks locally BEFORE pushing to feature branch!
 
