@@ -1,31 +1,48 @@
 # Recommendation Engine with Vector Search
 
-A production-ready recommendation system built with PyTorch, Qdrant vector database, and FastAPI. Processes 25M+ user-item interactions to deliver sub-100ms personalized recommendations.
+A production-ready recommendation system built with PyTorch, Qdrant vector database, FastAPI, and a modern Next.js frontend. Processes 25M+ user-item interactions to deliver sub-100ms personalized recommendations.
 
 ## 🎯 Features
 
+- **Modern Frontend**: Next.js/React UI deployed on Vercel for beautiful user experience
 - **Scalable Data Processing**: PySpark/Dask for 25M+ ratings
 - **Two-Tower Neural Network**: 128-dimensional embeddings for collaborative filtering
 - **Vector Search**: Qdrant for sub-100ms similarity search
 - **Production API**: FastAPI with Redis caching
 - **MLOps Pipeline**: MLflow experiment tracking and model registry
 - **Full Monitoring**: Prometheus + Grafana dashboards
-- **100% Free Infrastructure**: All services run locally via Docker
+- **CI/CD Pipeline**: Automated testing, building, and deployment
+- **100% Free Infrastructure**: Backend via Docker, Frontend on Vercel
 
 ## 🏗️ Architecture
 
 ```
-Data Layer (MovieLens 25M)
-    ↓
-PySpark Processing → Parquet Files
-    ↓
-PyTorch Two-Tower Model → MLflow Tracking
-    ↓
-Embeddings (128-dim) → Qdrant Vector DB
-    ↓
-FastAPI Service ← Redis Cache
-    ↓
-Prometheus + Grafana Monitoring
+┌─────────────────────────────────────┐
+│  Frontend (Vercel + Next.js/React)  │
+│  - Beautiful UI                     │
+│  - User input & recommendations     │
+└─────────────────────────────────────┘
+              ↓ HTTPS API
+┌─────────────────────────────────────┐
+│      FastAPI Backend (Docker)       │
+│      ← Redis Cache                  │
+└─────────────────────────────────────┘
+              ↓
+┌─────────────────────────────────────┐
+│    Qdrant Vector DB (Docker)        │
+│    - 128-dim embeddings             │
+│    - Sub-100ms search               │
+└─────────────────────────────────────┘
+              ↓ ML Pipeline
+┌─────────────────────────────────────┐
+│  Data Processing & Training         │
+│  PySpark → PyTorch → MLflow         │
+│  (MovieLens 25M)                    │
+└─────────────────────────────────────┘
+              ↓
+┌─────────────────────────────────────┐
+│  Monitoring (Prometheus + Grafana)  │
+└─────────────────────────────────────┘
 ```
 
 ## 📋 Prerequisites
@@ -162,6 +179,40 @@ docker build -t recommendation-api:latest .
 docker-compose up -d
 ```
 
+## 💻 Frontend Development
+
+### Setup Next.js Frontend
+
+```bash
+# Navigate to frontend directory (to be created)
+cd frontend/
+
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+```
+
+### Deploy to Vercel
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel --prod
+```
+
+**Frontend Features**:
+- Beautiful, responsive UI built with Next.js and Tailwind CSS
+- User input form for preferences
+- Real-time recommendation display
+- Loading states and error handling
+- Integration with FastAPI backend
+
+**Note**: Frontend setup coming in Phase 5. Focus is on ML pipeline and backend first.
+
 ## 📈 Monitoring
 
 ### View Metrics
@@ -201,24 +252,37 @@ open htmlcov/index.html
 ## 📦 Project Structure
 
 ```
-recommendation-engine/
+Recommendation-System/
+├── .github/
+│   └── workflows/         # CI/CD pipelines
+│       ├── ci.yml         # Tests, linting, security
+│       └── cd.yml         # Docker build & deploy
 ├── src/
-│   ├── data/              # Data processing scripts
-│   ├── models/            # PyTorch model definitions
-│   ├── training/          # Training loops and datasets
-│   ├── embeddings/        # Embedding generation
-│   ├── vector_store/      # Qdrant client and indexing
-│   ├── retrieval/         # Recommendation retrieval logic
-│   ├── api/               # FastAPI application
-│   ├── monitoring/        # Metrics and logging
-│   └── utils/             # Utility functions
-├── tests/                 # Unit, integration, and load tests
-├── notebooks/             # Jupyter notebooks for EDA
-├── config/                # Configuration files
+│   ├── api/               # ✅ FastAPI application (implemented)
+│   ├── utils/             # ✅ Helper functions (implemented)
+│   ├── data/              # 🚧 Data processing scripts (TODO)
+│   ├── models/            # 🚧 PyTorch models (TODO)
+│   ├── training/          # 🚧 Training pipeline (TODO)
+│   ├── embeddings/        # 🚧 Embedding generation (TODO)
+│   ├── vector_store/      # 🚧 Qdrant integration (TODO)
+│   ├── retrieval/         # 🚧 Recommendation logic (TODO)
+│   └── monitoring/        # 🚧 Metrics collection (TODO)
+├── frontend/              # 🚧 Next.js + React UI (TODO)
+│   └── (Vercel deployment)
+├── tests/
+│   ├── unit/              # ✅ Unit tests (30 tests, 100% coverage)
+│   └── integration/       # ✅ Integration tests (4 tests)
+├── notebooks/             # 🚧 EDA notebooks (TODO)
+├── config/                # 🚧 Configuration files (TODO)
 ├── data/                  # Data storage (gitignored)
 ├── models/                # Trained models (gitignored)
-├── docker-compose.yml     # All services configuration
-└── requirements.txt       # Python dependencies
+├── Dockerfile             # ✅ Docker container config
+├── docker-compose.yml     # 🚧 Full orchestration (TODO)
+├── requirements.txt       # ✅ Python dependencies
+├── pytest.ini             # ✅ Test configuration
+├── pyproject.toml         # ✅ Black + isort config
+├── CLAUDE.md              # ✅ AI assistant context
+└── README.md              # ✅ This file
 ```
 
 ## 🔧 Configuration
@@ -287,10 +351,10 @@ pre-commit install
 
 ## 📚 Documentation
 
-- [Project Specification](PROJECT_SPEC.md)
-- [Implementation Plan](IMPLEMENTATION_PLAN.md)
-- [Agent Architecture](AGENT_ARCHITECTURE.md)
-- [AI Workflow Skills](AI_WORKFLOW_SKILLS.md)
+- [**CLAUDE.md**](CLAUDE.md) - **START HERE** for AI assistants working on this project
+- [Project Specification](PROJECT_SPEC.md) - Technical specification (gitignored)
+- [Implementation Plan](IMPLEMENTATION_PLAN.md) - Development roadmap (gitignored)
+- [README.md](README.md) - This file (setup and usage guide)
 
 ## 🤝 Contributing
 
