@@ -10,6 +10,8 @@
 
 This document provides context for Claude (or other AI assistants) working on this project. Read this FIRST before making any changes.
 
+**📖 For ML Implementation Details**: See `.claude/ML_IMPLEMENTATION_PLAN.md` - comprehensive guide for building the Two-Tower recommendation system.
+
 ### Project Goal
 Build a **production-grade recommendation system** with:
 - ✅ Full CI/CD pipeline (GitHub Actions)
@@ -28,6 +30,13 @@ Build a **production-grade recommendation system** with:
 - ✅ YES Vercel/Next.js (professional frontend)
 - ✅ YES Docker, CI/CD, monitoring (resume value)
 - ✅ YES Vector DB, Redis (shows scale understanding)
+
+### 🚨 CRITICAL: Pre-Push Requirements
+**Before pushing ANY code to GitHub, ALWAYS run:**
+```bash
+./scripts/pre-push-checks.sh
+```
+This validates formatting, linting, and tests. **User requirement - do not skip!**
 
 ---
 
@@ -79,14 +88,18 @@ Build a **production-grade recommendation system** with:
 
 - **Test Configuration**:
   - `pytest.ini` - Test discovery and markers
+  - `.coveragerc` - Coverage configuration (excludes main() CLI functions)
   - `pyproject.toml` - Black + isort compatibility (`profile = "black"`)
-  - Coverage target: 80% (currently 100%)
+  - Coverage target: 80% minimum (currently 93%)
   - **IMPORTANT**: Coverage only runs on unit tests, NOT integration tests
+  - CLI main() functions excluded from coverage (common practice)
 
 #### 4. Configuration Files
 - `requirements.txt` - All dependencies including `httpx==0.25.0` (fixed TestClient issues)
 - `.gitignore` - Excludes most .md files, data, models, logs, coverage reports
+- `.coveragerc` - Coverage exclusions (main functions, `if __name__ == "__main__"`)
 - `pyproject.toml` - Formatting configuration (Black + isort)
+- `scripts/pre-push-checks.sh` - Automated pre-push validation (7 checks)
 
 ### 🚧 What's NOT Implemented Yet
 
@@ -315,7 +328,24 @@ Recommendation-System/
 
 ### For AI Assistants Working on This Project
 
-#### 1. **ALWAYS Check Current Branch**
+#### 1. **🚨 MANDATORY: Run Pre-Push Checks Before EVERY Push**
+
+**CRITICAL - USER REQUIREMENT**: ALWAYS run the pre-push script before pushing to GitHub!
+
+```bash
+./scripts/pre-push-checks.sh
+```
+
+This script runs ALL the checks that CI will run:
+- Black formatting verification
+- isort import sorting verification
+- flake8 linting (critical + all errors)
+- Unit tests with coverage (must be ≥80%)
+- Integration tests
+
+**DO NOT push without running this script first!** CI failures waste time and create extra commits.
+
+#### 2. **Check Current Branch**
 ```bash
 git branch --show-current
 ```
@@ -323,26 +353,60 @@ git branch --show-current
 - Work on feature branches
 - Create PRs for all changes
 
-#### 2. **Testing Requirements**
+#### 3. **Testing Requirements**
 - ALL code must have tests
 - Maintain 100% coverage (80% minimum)
-- Run tests before committing:
-```bash
-pytest tests/unit/ -v --cov=src --cov-report=term
-pytest tests/integration/ -v
-```
+- Tests are automatically run by pre-push script
 
-#### 3. **Code Quality**
-- Format with Black and isort:
+#### 4. **Code Quality**
+- Format code before committing:
 ```bash
 black src/ tests/
 isort src/ tests/
 ```
-- Verify before pushing:
+- Quality checks automatically run by pre-push script
+
+#### 5. **Pre-Push Checklist Details**
+
+**ALWAYS run before pushing:**
+
+**Option 1: Use the automated script (RECOMMENDED)**
 ```bash
-black --check src/ tests/
-isort --check-only src/ tests/
+./scripts/pre-push-checks.sh
 ```
+
+**Option 2: Run checks manually (7 steps)**
+```bash
+# 1. Check Black formatting
+black --check src/ tests/
+
+# 2. Check isort
+isort --check-only src/ tests/
+
+# 3. Run flake8 (critical errors)
+flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+
+# 4. Run flake8 (all issues)
+flake8 src/ --count --max-complexity=10 --max-line-length=127 --statistics
+
+# 5. Run unit tests with coverage
+pytest tests/unit/ -v --cov=src --cov-report=term
+
+# 6. Check coverage threshold (CRITICAL - CI will fail if <80%)
+coverage report --fail-under=80
+
+# 7. Run integration tests
+pytest tests/integration/ -v
+```
+
+**Common Issues Caught by These Checks:**
+- Unused imports (F401)
+- Unused variables (F841)
+- Formatting issues (Black/isort)
+- Test failures
+- **Coverage below 80% (CI failure)**
+
+**User Requirement**: Always run these checks locally BEFORE pushing to feature branch!
 
 #### 4. **Commit Message Format**
 Follow conventional commits:
