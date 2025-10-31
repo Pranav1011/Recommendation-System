@@ -90,6 +90,163 @@ Why important: Avoids only recommending blockbusters
 
 ---
 
+## 🔑 Understanding User Ratings & Cold Start Problem
+
+### Where Do User Ratings Come From?
+
+**IMPORTANT**: This is one of the most common questions about recommender systems!
+
+#### Scenario A: Training & Testing (Phases 1-4)
+```
+ml-25M Dataset Structure:
+userId,movieId,rating,timestamp
+1,2,3.5,1112486027
+1,29,3.5,1112484676
+1,32,3.5,1112484819
+...
+
+Source: Historical data from movielens.org
+- 162,000 real users
+- 25 million real ratings
+- Collected over years
+- Users voluntarily rated movies
+
+For Training:
+✅ We HAVE all ratings (historical data)
+✅ Split 80/20: train/test
+✅ Test on held-out ratings (we know ground truth)
+✅ No cold start problem during training
+```
+
+#### Scenario B: Production & Demo (Phase 5)
+```
+Problem: NEW user visits your demo site
+- They have NO rating history
+- Model needs ratings to recommend
+- This is the "Cold Start Problem"!
+
+Solutions implemented in Phase 5:
+1. Onboarding: Ask user to rate 10-15 movies
+2. Demo mode: Pre-seeded user profiles
+3. Popular fallback: Show trending until profile ready
+```
+
+### Cold Start Solutions (Phase 5 Implementation)
+
+#### Solution 1: Onboarding Flow (Recommended)
+```
+User Experience:
+─────────────────────────────────────
+"Welcome! Rate these movies to get started"
+
+[The Shawshank Redemption] ⭐⭐⭐⭐⭐
+[The Godfather] ⭐⭐⭐⭐☆
+[Pulp Fiction] ⭐⭐⭐☆☆
+[The Matrix] ⭐⭐⭐⭐⭐
+...10-15 movies total
+
+[Get My Recommendations →]
+─────────────────────────────────────
+
+Backend Process:
+1. Collect 10-15 ratings from user
+2. Generate temporary user embedding
+3. Search Qdrant for similar movies
+4. Return personalized recommendations
+
+Required ratings:
+- Minimum: 5 ratings (basic)
+- Recommended: 10-15 ratings (good)
+- Optimal: 20+ ratings (excellent)
+```
+
+#### Solution 2: Demo Mode (For Portfolio)
+```python
+# Pre-seeded demo users from test set
+demo_users = {
+    "action_lover": {
+        "user_id": 42,
+        "description": "Loves action, superhero movies",
+        "top_rated": ["The Dark Knight", "Inception", "Mad Max"]
+    },
+    "romance_fan": {
+        "user_id": 123,
+        "description": "Enjoys romantic comedies, dramas",
+        "top_rated": ["The Notebook", "Pride & Prejudice"]
+    },
+    "film_buff": {
+        "user_id": 999,
+        "description": "Watches everything, diverse taste",
+        "top_rated": ["Parasite", "The Godfather", "Spirited Away"]
+    },
+    "critic": {
+        "user_id": 1337,
+        "description": "Harsh rater, high standards",
+        "avg_rating": 2.8
+    }
+}
+
+# Demo landing page:
+"Try recommendations as:"
+[Action Lover] [Romance Fan] [Film Buff] [Critic]
+→ Instant recommendations, no signup needed
+```
+
+#### Solution 3: Hybrid Strategy
+```
+Stage 1: First Visit (0 ratings)
+→ Show "Trending Now" / "Popular This Week"
+   (No personalization, same for everyone)
+
+Stage 2: Quick Profile (3-5 ratings)
+→ "We're learning your taste!"
+   Basic collaborative filtering
+
+Stage 3: Full Profile (10+ ratings)
+→ "Personalized for you"
+   Two-Tower model recommendations
+
+Stage 4: Rich Profile (50+ ratings)
+→ "Expert recommendations"
+   LLM explanations enabled
+```
+
+### Movies to Show for Initial Rating
+
+**Selection Strategy:**
+```python
+initial_rating_candidates = {
+    'popular': [
+        # Everyone knows these
+        'The Shawshank Redemption',
+        'The Dark Knight',
+        'Inception',
+        'Forrest Gump',
+    ],
+    'genre_diversity': [
+        # Cover all major genres
+        'Action': 'The Matrix',
+        'Comedy': 'The Big Lebowski',
+        'Drama': 'The Godfather',
+        'Horror': 'The Shining',
+        'Romance': 'The Notebook',
+        'Sci-Fi': 'Blade Runner',
+        'Animation': 'Spirited Away',
+    ],
+    'time_periods': [
+        # Mix old and new
+        'Classic': 'Casablanca (1942)',
+        '90s': 'Pulp Fiction (1994)',
+        '2000s': 'LOTR (2001)',
+        'Recent': 'Parasite (2019)',
+    ]
+}
+
+# Select 15 movies: 5 popular + 8 diverse + 2 from different eras
+```
+
+---
+
 ## 🗓️ Implementation Phases
 
 ### Phase 1: Data Pipeline Enhancement (5-7 hours)
@@ -897,6 +1054,186 @@ async def get_recommendations(
 
 ---
 
+#### Step 5.4: Cold Start Handling
+**File**: `src/api/cold_start.py`
+
+**Cold Start Implementation:**
+
+**Option 1: Onboarding Endpoint**
+```python
+@app.post("/api/v1/onboarding/rate")
+async def collect_initial_ratings(ratings: List[dict]):
+    """
+    Collect initial ratings from new user
+
+    Args:
+        ratings: [{"movie_id": 1, "rating": 5.0}, ...]
+
+    Returns:
+        user_id and initial recommendations
+    """
+    # Generate temporary user embedding from ratings
+    user_embedding = model.generate_cold_start_embedding(ratings)
+
+    # Create temporary user ID
+    temp_user_id = generate_temp_user_id()
+
+    # Cache embedding
+    redis_client.setex(
+        f"temp_user:{temp_user_id}",
+        86400,  # 24 hours
+        user_embedding.tobytes()
+    )
+
+    # Get initial recommendations
+    recommendations = qdrant_client.search(
+        collection_name="movies",
+        query_vector=user_embedding.tolist(),
+        limit=20
+    )
+
+    return {
+        "temp_user_id": temp_user_id,
+        "recommendations": recommendations,
+        "profile_strength": len(ratings)  # More ratings = better profile
+    }
+
+@app.get("/api/v1/onboarding/suggested-movies")
+async def get_suggested_movies_for_rating(count: int = 15):
+    """
+    Get diverse, popular movies for initial rating
+
+    Returns list of movies covering:
+    - Popular (everyone knows them)
+    - Genre diverse (all major genres)
+    - Different eras (classic to modern)
+    """
+    # Load pre-selected movies
+    suggested_movies = load_onboarding_movies()
+
+    # Shuffle to avoid bias
+    import random
+    random.shuffle(suggested_movies)
+
+    return suggested_movies[:count]
+```
+
+**Option 2: Demo Mode Endpoints**
+```python
+@app.get("/api/v1/demo/users")
+async def get_demo_users():
+    """
+    Get pre-seeded demo user profiles
+    """
+    return [
+        {
+            "id": "action_lover",
+            "name": "Action Lover",
+            "description": "Loves action, superhero, and thriller movies",
+            "top_movies": ["The Dark Knight", "Inception", "Mad Max: Fury Road"],
+            "avatar": "🎬"
+        },
+        {
+            "id": "romance_fan",
+            "name": "Romance Fan",
+            "description": "Enjoys romantic comedies and dramas",
+            "top_movies": ["The Notebook", "Pride & Prejudice", "Love Actually"],
+            "avatar": "❤️"
+        },
+        {
+            "id": "film_buff",
+            "name": "Film Buff",
+            "description": "Diverse taste across all genres",
+            "top_movies": ["Parasite", "The Godfather", "Spirited Away"],
+            "avatar": "🎞️"
+        },
+        {
+            "id": "critic",
+            "name": "The Critic",
+            "description": "High standards, rates harshly",
+            "top_movies": ["Citizen Kane", "8½", "The Seventh Seal"],
+            "avatar": "⭐"
+        }
+    ]
+
+@app.get("/api/v1/demo/recommendations/{demo_user_id}")
+async def get_demo_recommendations(demo_user_id: str, limit: int = 10):
+    """
+    Get recommendations for pre-seeded demo user
+    """
+    # Map demo user to actual user_id from test set
+    demo_user_mapping = {
+        "action_lover": 42,
+        "romance_fan": 123,
+        "film_buff": 999,
+        "critic": 1337
+    }
+
+    user_id = demo_user_mapping.get(demo_user_id)
+    if not user_id:
+        raise HTTPException(status_code=404, detail="Demo user not found")
+
+    # Use standard recommendation endpoint
+    return await get_recommendations(user_id, limit)
+```
+
+**Data File**: `data/onboarding_movies.json`
+```json
+[
+    {
+        "movie_id": 1,
+        "title": "The Shawshank Redemption",
+        "year": 1994,
+        "genres": ["Drama"],
+        "popularity": "high",
+        "reason": "Popular"
+    },
+    {
+        "movie_id": 260,
+        "title": "The Matrix",
+        "year": 1999,
+        "genres": ["Sci-Fi", "Action"],
+        "popularity": "high",
+        "reason": "Genre coverage: Sci-Fi/Action"
+    },
+    ...
+]
+```
+
+**Frontend Flow:**
+```typescript
+// Option 1: Onboarding
+1. GET /api/v1/onboarding/suggested-movies
+   → Shows 15 diverse movies
+
+2. User rates them in UI
+   ratings = [
+     {movie_id: 1, rating: 5.0},
+     {movie_id: 260, rating: 4.5},
+     ...
+   ]
+
+3. POST /api/v1/onboarding/rate
+   → Returns temp_user_id + initial recommendations
+
+4. Continue using temp_user_id for session
+
+// Option 2: Demo Mode
+1. GET /api/v1/demo/users
+   → Shows profile cards
+
+2. User clicks "Action Lover"
+
+3. GET /api/v1/demo/recommendations/action_lover
+   → Instant recommendations
+```
+
+**Status**: ⏳ Not started
+**Estimated time**: 2-3 hours
+**Tests needed**: 8-10 tests for both onboarding and demo mode
+
+---
+
 ## 📈 Success Criteria
 
 ### Phase 1 Complete When:
@@ -936,10 +1273,344 @@ async def get_recommendations(
 - ✅ Vector search returns relevant results (<100ms)
 - ✅ API endpoint works
 - ✅ Redis cache improves latency
+- ✅ Cold start handling implemented (onboarding + demo mode)
+- ✅ New users can rate movies and get recommendations
+- ✅ Demo profiles work instantly
 
 ---
 
-## 🚀 RAG Integration Ideas (Optional)
+### Phase 6: LLM Explanations (Optional, 5-8 hours)
+
+**Note**: This phase is OPTIONAL and should only be implemented after core system (Phases 1-5) is complete and working well.
+
+#### Step 6.1: Context Retrieval
+**File**: `src/explanations/context.py`
+
+**Build explanation context:**
+```python
+def get_explanation_context(user_id, movie_id, recommendation_score):
+    """
+    Gather all context needed for LLM explanation
+
+    Returns:
+        Dictionary with user profile, movie info, and similarity reasons
+    """
+    return {
+        'user': {
+            'top_genres': get_user_top_genres(user_id, top_n=3),
+            'recent_movies': get_recent_watches(user_id, limit=5),
+            'avg_rating': get_user_avg_rating(user_id),
+            'rating_style': classify_rating_style(user_id),
+        },
+        'movie': {
+            'title': movie.title,
+            'genres': movie.genres,
+            'year': movie.year,
+            'director': movie.director,
+            'avg_rating': movie.avg_rating,
+        },
+        'similarity': {
+            'score': recommendation_score,
+            'similar_movies': get_similar_movies_user_watched(user_id, movie_id, top_n=3),
+            'common_genres': find_common_genres(user_id, movie_id),
+            'common_themes': extract_common_themes(user_id, movie_id),
+        }
+    }
+```
+
+**Status**: ⏳ Not started
+**Estimated time**: 1 hour
+
+---
+
+#### Step 6.2: Prompt Engineering
+**File**: `src/explanations/prompts.py`
+
+**Design effective prompts:**
+```python
+EXPLANATION_PROMPT = """
+You are a helpful movie recommendation assistant. Explain why a movie is recommended to a user in 2-3 natural, engaging sentences.
+
+User Profile:
+- Favorite genres: {user_top_genres}
+- Recently enjoyed: {recent_movies} (all rated highly)
+- Average rating: {avg_rating}/5 stars
+- Rating style: {rating_style} (generous/critical/balanced)
+
+Recommended Movie:
+- Title: {movie_title} ({year})
+- Genres: {movie_genres}
+- Director: {director}
+- Average rating: {movie_avg_rating}/5 stars
+
+Why it's recommended:
+- Recommendation confidence: {similarity_score}%
+- Similar to movies you loved: {similar_movies}
+- Common themes: {common_themes}
+
+Write a compelling 2-3 sentence explanation that would convince the user to watch this movie.
+Focus on WHY the user would personally enjoy it based on their taste.
+Be conversational and engaging.
+Do NOT mention technical details like "similarity score" or "algorithm".
+
+Example good explanation:
+"Given your enthusiasm for Christopher Nolan's mind-bending narratives like Inception and Interstellar,
+you'll love Denis Villeneuve's Arrival. It offers a similarly thought-provoking exploration of time and
+communication, with stunning cinematography and an emotionally resonant story that will stay with you."
+"""
+
+FALLBACK_TEMPLATE = "Because you enjoyed {similar_movie}, we think you'll love {recommended_movie}!"
+```
+
+**Status**: ⏳ Not started
+**Estimated time**: 1-2 hours
+
+---
+
+#### Step 6.3: LLM Integration
+**File**: `src/explanations/generator.py`
+
+**LLM model options (decide during implementation):**
+```python
+# Option 1: OpenAI GPT-3.5-turbo (Recommended for start)
+#   - Cost: ~$0.0003 per explanation
+#   - Latency: 500-1000ms
+#   - Quality: Good
+
+# Option 2: OpenAI GPT-4
+#   - Cost: ~$0.01 per explanation (30x more expensive)
+#   - Latency: 1000-2000ms
+#   - Quality: Excellent
+
+# Option 3: Anthropic Claude 3 Sonnet
+#   - Cost: Similar to GPT-4
+#   - Latency: 500-1000ms
+#   - Quality: Excellent, good for nuanced explanations
+
+# Option 4: Local Llama 3 8B
+#   - Cost: Free (but needs GPU)
+#   - Latency: 200-500ms (with GPU)
+#   - Quality: Good enough
+```
+
+**Implementation:**
+```python
+import openai
+from functools import lru_cache
+
+class ExplanationGenerator:
+    def __init__(self, provider="openai", model="gpt-3.5-turbo"):
+        """
+        Initialize explanation generator
+
+        Args:
+            provider: "openai", "anthropic", or "local"
+            model: Model name for the provider
+        """
+        self.provider = provider
+        self.model = model
+        self.redis_client = get_redis_client()
+
+    def generate(self, context: dict) -> str:
+        """Generate explanation using LLM with caching"""
+
+        # Check cache first (explanations don't change often)
+        cache_key = f"explain:{context['user']['id']}:{context['movie']['id']}"
+        cached = self.redis_client.get(cache_key)
+        if cached:
+            return cached.decode('utf-8')
+
+        # Build prompt
+        prompt = EXPLANATION_PROMPT.format(**context)
+
+        # Call LLM (with error handling)
+        try:
+            if self.provider == "openai":
+                explanation = self._generate_openai(prompt)
+            elif self.provider == "anthropic":
+                explanation = self._generate_anthropic(prompt)
+            else:
+                explanation = self._generate_local(prompt)
+
+            # Cache result for 24 hours
+            self.redis_client.setex(cache_key, 86400, explanation)
+
+            return explanation
+
+        except Exception as e:
+            # Fallback to template on error
+            logger.error(f"LLM generation failed: {e}")
+            return self._fallback_explanation(context)
+
+    def _generate_openai(self, prompt: str) -> str:
+        """Generate using OpenAI"""
+        response = openai.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": "You are a helpful movie recommendation assistant."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=150,
+        )
+        return response.choices[0].message.content.strip()
+
+    def _fallback_explanation(self, context):
+        """Simple template-based fallback"""
+        similar = context['similarity']['similar_movies'][0]
+        return f"Because you enjoyed {similar}, we think you'll love {context['movie']['title']}!"
+```
+
+**Status**: ⏳ Not started
+**Estimated time**: 2-3 hours
+
+---
+
+#### Step 6.4: API Integration
+**File**: `src/api/recommendations.py` (modify existing)
+
+**Add explanation parameter:**
+```python
+@app.get("/api/v1/recommendations/{user_id}")
+async def get_recommendations(
+    user_id: int,
+    limit: int = 10,
+    use_cache: bool = True,
+    explain: bool = False  # NEW PARAMETER
+):
+    """
+    Get personalized recommendations with optional explanations
+    """
+    # Get recommendations (existing code)
+    recommendations = get_top_k_movies(user_id, k=limit)
+
+    # Add explanations if requested
+    if explain:
+        explainer = ExplanationGenerator(
+            provider="openai",  # Can be changed later
+            model="gpt-3.5-turbo"
+        )
+
+        for rec in recommendations:
+            # Build context
+            context = get_explanation_context(
+                user_id,
+                rec['movie_id'],
+                rec['similarity_score']
+            )
+
+            # Generate explanation
+            rec['explanation'] = explainer.generate(context)
+
+            # Track explanation generation time
+            rec['explanation_latency_ms'] = ...
+
+    return {
+        'user_id': user_id,
+        'recommendations': recommendations,
+        'explanations_enabled': explain
+    }
+
+# Example response with explanations:
+{
+    "user_id": 123,
+    "recommendations": [
+        {
+            "movie_id": 1,
+            "title": "Inception",
+            "score": 0.89,
+            "explanation": "Given your enthusiasm for mind-bending narratives like
+                           The Matrix and Memento, Christopher Nolan's Inception offers
+                           a similarly complex exploration of reality and dreams. Your
+                           average 4.5/5 rating for cerebral sci-fi suggests you'll
+                           appreciate its intricate plot and stunning visual storytelling."
+        }
+    ],
+    "explanations_enabled": true
+}
+```
+
+**Status**: ⏳ Not started
+**Estimated time**: 1 hour
+
+---
+
+#### Step 6.5: Cost Optimization & Monitoring
+**File**: `src/explanations/monitor.py`
+
+**Track costs and quality:**
+```python
+class ExplanationMonitor:
+    """Monitor explanation generation costs and quality"""
+
+    def __init__(self):
+        self.metrics = {
+            'total_generated': 0,
+            'cache_hits': 0,
+            'cache_misses': 0,
+            'fallback_used': 0,
+            'total_cost': 0.0,
+            'avg_latency_ms': 0.0,
+        }
+
+    def log_generation(self, cached: bool, cost: float, latency_ms: float):
+        """Log each explanation generation"""
+        self.metrics['total_generated'] += 1
+
+        if cached:
+            self.metrics['cache_hits'] += 1
+        else:
+            self.metrics['cache_misses'] += 1
+            self.metrics['total_cost'] += cost
+
+        # Update rolling average
+        self.metrics['avg_latency_ms'] = (
+            (self.metrics['avg_latency_ms'] * (self.metrics['total_generated'] - 1) + latency_ms)
+            / self.metrics['total_generated']
+        )
+
+    def get_daily_report(self) -> dict:
+        """Get daily cost and usage report"""
+        cache_hit_rate = self.metrics['cache_hits'] / max(self.metrics['total_generated'], 1)
+
+        return {
+            'explanations_generated': self.metrics['total_generated'],
+            'cache_hit_rate': f"{cache_hit_rate:.2%}",
+            'total_cost_usd': f"${self.metrics['total_cost']:.2f}",
+            'avg_latency_ms': f"{self.metrics['avg_latency_ms']:.0f}ms",
+            'projected_monthly_cost': f"${self.metrics['total_cost'] * 30:.2f}",
+        }
+```
+
+**Status**: ⏳ Not started
+**Estimated time**: 1 hour
+
+---
+
+### Phase 6 Complete When:
+- ✅ Context retrieval working for all users
+- ✅ LLM provider integrated (OpenAI/Claude/Llama)
+- ✅ Explanations are natural and engaging
+- ✅ Cache hit rate > 70% (cost optimization)
+- ✅ Average latency < 1 second
+- ✅ Fallback templates work when LLM fails
+- ✅ Cost monitoring dashboard shows daily spend < $1
+- ✅ A/B test shows explanations improve engagement (optional)
+
+**Expected Costs:**
+```
+GPT-3.5-turbo:
+- 1000 users/day × 10 recommendations × 30% cache miss = 3000 LLM calls/day
+- 3000 × $0.0003 = $0.90/day
+- Monthly: ~$27/month
+
+With 80% cache hit rate:
+- Monthly: ~$5/month (very affordable!)
+```
+
+---
+
+## 🚀 LLM Integration Benefits
 
 ### Idea: "Explainable Recommendations with LLM"
 
@@ -1036,15 +1707,18 @@ your preference for thought-provoking cinema."
 - [ ] Step 4.3: Generate Embeddings
 - [ ] Step 4.4: Embedding Analysis
 
-### Phase 5: Vector Database
+### Phase 5: Vector Database & Production
 - [ ] Step 5.1: Qdrant Setup
 - [ ] Step 5.2: Index Embeddings
 - [ ] Step 5.3: API Integration
+- [ ] Step 5.4: Cold Start Handling (Onboarding + Demo Mode)
 
-### Optional: RAG Integration
-- [ ] LLM-powered explanations
-- [ ] Context retrieval
-- [ ] Prompt engineering
+### Phase 6: LLM Explanations (Optional)
+- [ ] Step 6.1: Context Retrieval
+- [ ] Step 6.2: Prompt Engineering
+- [ ] Step 6.3: LLM Integration (Choose model: GPT-3.5/Claude/Llama)
+- [ ] Step 6.4: API Integration
+- [ ] Step 6.5: Cost Optimization & Monitoring
 
 ---
 
@@ -1057,6 +1731,13 @@ python src/data/download_movielens.py --size 25m --output data/raw
 
 ---
 
-**Last Updated**: 2025-10-30
+**Last Updated**: 2025-10-30 (Added cold start handling + Phase 6 LLM explanations)
 **Current Phase**: Phase 1 (Planning Complete)
 **Next Milestone**: ml-25M downloaded and processed
+
+**Key Additions:**
+- ✅ Explained where user ratings come from (historical vs production)
+- ✅ Added comprehensive cold start solutions (onboarding + demo mode)
+- ✅ Defined Phase 6 for LLM explanations (optional, after core system)
+- ✅ LLM model decision deferred to Phase 6 implementation
+- ✅ Cost estimates and monitoring strategy included
