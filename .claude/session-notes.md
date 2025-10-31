@@ -162,18 +162,20 @@ pytest tests/unit/ -v
 - ⚠️ Main branch protected - work on feature branches
 
 ### Development Rules
-1. **Always write tests** - Maintain 100% coverage
-2. **Format before commit** - `black src/ tests/ && isort src/ tests/`
-3. **Commit message format** - `type: description` (feat/fix/chore/test/docs)
-4. **Test locally first** - `pytest tests/unit/ -v --cov=src`
+1. **🚨 MANDATORY: Run pre-push checks before EVERY push** - `./scripts/pre-push-checks.sh`
+2. **Always write tests** - Maintain 80%+ coverage (aim for 100%)
+3. **Format before commit** - `black src/ tests/ && isort src/ tests/`
+4. **Commit message format** - `type: description` (feat/fix/chore/test/docs)
 5. **Update CLAUDE.md** - When adding major components
 
 ### Common Issues to Avoid
+- ❌ **Don't push without running pre-push-checks.sh** - Will fail CI!
 - ❌ Don't modify pytest.ini addopts
 - ❌ Don't use old httpx versions
 - ❌ Don't commit without tests
-- ❌ Don't push directly to main
+- ❌ Don't push directly to main/develop
 - ❌ Don't skip Black/isort formatting
+- ❌ Don't ignore flake8 errors (unused imports, unused variables)
 
 ---
 
