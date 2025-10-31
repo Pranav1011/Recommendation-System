@@ -10,6 +10,8 @@
 
 This document provides context for Claude (or other AI assistants) working on this project. Read this FIRST before making any changes.
 
+**📖 For ML Implementation Details**: See `.claude/ML_IMPLEMENTATION_PLAN.md` - comprehensive guide for building the Two-Tower recommendation system.
+
 ### Project Goal
 Build a **production-grade recommendation system** with:
 - ✅ Full CI/CD pipeline (GitHub Actions)
