@@ -36,20 +36,22 @@ venv.bak/
 *.swn
 .DS_Store
 
-# Data files
+# Data files (large datasets)
 data/raw/*
 !data/raw/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
 data/embeddings/*
 !data/embeddings/.gitkeep
+data/embeddings_*/
 data/features/*
 !data/features/.gitkeep
+data/graph_cache/
 *.csv
 *.parquet
 *.npy
 
-# Models
+# Models (large binary files)
 models/*
 !models/.gitkeep
 *.pth
@@ -59,6 +61,7 @@ models/*
 # MLflow
 mlflow/
 mlruns/
+mlruns_*/
 
 # Docker volumes
 qdrant_storage/
@@ -88,9 +91,29 @@ coverage.xml
 .DS_Store
 Thumbs.db
 
-# md files
+# Temporary files
+*.tar.gz
+*.zip
+root@*
+
+# Experimental/temporary scripts (root directory only)
+/*_temp.py
+/*_test.py
+/*_draft.py
+/fix_*.py
+/test_*.py
+/analyze_*.py
+/generate_*_safe.py
+/generate_*_simple.py
+/train_*_fixed.py
+/train_*_quick.py
+
+# Documentation (private)
 AGENT_ARCHITECTURE.md
 AGENT_SKILLS_SETUP_GUIDE.md
 AI_WORKFLOW_SKILLS.md
 IMPLEMENTATION_PLAN.md
 PROJECT_SPEC.md
+
+# Old Docs directory (moved to docs/)
+Docs/

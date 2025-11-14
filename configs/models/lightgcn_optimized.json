@@ -1,0 +1,72 @@
+{
+  "description": "Optimized LightGCN Training Configuration",
+  "model_type": "lightgcn",
+  "data_dir": "data/processed",
+  "checkpoint_dir": "models/checkpoints",
+  "graph_cache_dir": "data/graph_cache",
+
+  "n_users": 162541,
+  "n_movies": 59047,
+
+  "model": {
+    "embedding_dim": 128,
+    "n_layers": 3,
+    "use_residual": false,
+    "rating_threshold": 4.0,
+    "comment": "128-dim for more capacity on sparse data (was 64)"
+  },
+
+  "loss": {
+    "type": "bpr",
+    "reg_weight": 0.0001,
+    "comment": "L2 regularization on embeddings"
+  },
+
+  "training": {
+    "batch_size": 1024,
+    "num_workers": 4,
+    "n_negatives": 4,
+    "comment": "4 negatives per positive for stronger BPR signal (was 1)"
+  },
+
+  "optimizer": {
+    "type": "adam",
+    "learning_rate": 0.0005,
+    "weight_decay": 0.0,
+    "comment": "Lower LR for more stable training (was 0.001)"
+  },
+
+  "scheduler": {
+    "type": "reduce_on_plateau",
+    "mode": "max",
+    "factor": 0.5,
+    "patience": 3,
+    "min_lr": 1e-6,
+    "comment": "Reduce LR when NDCG@10 plateaus"
+  },
+
+  "training_loop": {
+    "epochs": 30,
+    "early_stopping_patience": 7,
+    "max_grad_norm": 1.0,
+    "eval_every": 1,
+    "save_best_only": true,
+    "comment": "Shorter training with aggressive early stopping"
+  },
+
+  "evaluation": {
+    "k_values": [10, 20, 50],
+    "metrics": ["recall", "ndcg"],
+    "n_eval_users": 100,
+    "comment": "Fast evaluation on 100 random users per epoch"
+  },
+
+  "mlflow": {
+    "experiment_name": "lightgcn_experiments",
+    "run_name": "lightgcn_128dim_4neg_optimized",
+    "tracking_uri": "file:./mlruns"
+  },
+
+  "device": "cuda",
+  "seed": 42
+}

@@ -1,0 +1,69 @@
+{
+  "description": "Training configuration for LightGCN (SIGIR 2020)",
+  "model_type": "lightgcn",
+  "data_dir": "data/processed",
+  "checkpoint_dir": "models/checkpoints",
+  "graph_cache_dir": "data/graph_cache",
+
+  "n_users": 162541,
+  "n_movies": 59047,
+
+  "model": {
+    "embedding_dim": 64,
+    "n_layers": 3,
+    "use_residual": false,
+    "rating_threshold": 4.0,
+    "comment": "64-dim and 3 layers are optimal per LightGCN paper"
+  },
+
+  "loss": {
+    "type": "bpr",
+    "reg_weight": 0.0001,
+    "comment": "L2 regularization on embeddings only"
+  },
+
+  "training": {
+    "batch_size": 2048,
+    "num_workers": 4,
+    "n_negatives": 1,
+    "comment": "LightGCN uses 1 negative per positive (paper setting)"
+  },
+
+  "optimizer": {
+    "type": "adam",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0,
+    "comment": "LR=0.001 is standard, regularization handled by loss"
+  },
+
+  "scheduler": {
+    "type": "reduce_on_plateau",
+    "mode": "min",
+    "factor": 0.5,
+    "patience": 3,
+    "min_lr": 1e-6
+  },
+
+  "training_loop": {
+    "epochs": 50,
+    "early_stopping_patience": 10,
+    "max_grad_norm": 1.0,
+    "eval_every": 1,
+    "save_best_only": true
+  },
+
+  "evaluation": {
+    "k_values": [10, 20, 50],
+    "metrics": ["recall", "ndcg", "precision", "hit_rate"],
+    "comment": "Focus on NDCG@10 (target: 20-30%)"
+  },
+
+  "mlflow": {
+    "experiment_name": "lightgcn_experiments",
+    "run_name": "lightgcn_64dim_3layers",
+    "tracking_uri": "file:./mlruns"
+  },
+
+  "device": "cuda",
+  "seed": 42
+}
