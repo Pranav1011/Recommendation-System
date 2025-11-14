@@ -1,0 +1,71 @@
+{
+  "description": "Hybrid LightGCN + Features Training Configuration",
+  "model_type": "hybrid_lightgcn",
+
+  "data_dir": "data/processed",
+  "features_dir": "data/features",
+  "checkpoint_dir": "models/checkpoints",
+  "graph_cache_dir": "data/graph_cache",
+
+  "n_users": 162541,
+  "n_movies": 59047,
+  "user_feature_dim": 30,
+  "movie_feature_dim": 13,
+
+  "model": {
+    "embedding_dim": 128,
+    "n_layers": 3,
+    "feature_hidden_dim": 128,
+    "dropout_rate": 0.2,
+    "feature_weight": 0.3,
+    "rating_threshold": 4.0,
+    "comment": "feature_weight=0.3 means 70% graph, 30% features"
+  },
+
+  "loss": {
+    "type": "bpr",
+    "reg_weight": 0.0001
+  },
+
+  "training": {
+    "batch_size": 512,
+    "num_workers": 4,
+    "n_negatives": 4
+  },
+
+  "optimizer": {
+    "type": "adam",
+    "learning_rate": 0.0005,
+    "weight_decay": 0.0
+  },
+
+  "scheduler": {
+    "type": "reduce_on_plateau",
+    "mode": "max",
+    "factor": 0.5,
+    "patience": 3,
+    "min_lr": 1e-6
+  },
+
+  "training_loop": {
+    "epochs": 25,
+    "early_stopping_patience": 7,
+    "max_grad_norm": 1.0,
+    "eval_every": 1,
+    "save_best_only": true
+  },
+
+  "evaluation": {
+    "k_values": [10, 20, 50],
+    "n_eval_users": 100
+  },
+
+  "mlflow": {
+    "experiment_name": "hybrid_lightgcn_experiments",
+    "run_name": "hybrid_128dim_feat03",
+    "tracking_uri": "file:./mlruns"
+  },
+
+  "device": "cuda",
+  "seed": 42
+}

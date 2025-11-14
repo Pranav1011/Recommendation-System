@@ -1,0 +1,36 @@
+{
+  "description": "Training configuration for Two-Tower recommendation model",
+
+  "data_dir": "data/processed",
+  "features_dir": "data/features",
+  "checkpoint_dir": "models/checkpoints",
+
+  "n_users": 137883,
+  "n_movies": 62423,
+  "user_feature_dim": 30,
+  "movie_feature_dim": 12,
+
+  "embedding_dim": 128,
+  "hidden_dim": 256,
+  "dropout_rate": 0.2,
+  "similarity_method": "cosine",
+
+  "loss_type": "mse",
+  "use_regularization": false,
+  "reg_weight": 0.0001,
+
+  "batch_size": 512,
+  "num_workers": 0,
+  "negative_sampling": false,
+  "n_negatives": 4,
+
+  "optimizer": "adam",
+  "learning_rate": 0.0005,
+  "weight_decay": 0.0001,
+  "max_grad_norm": 1.0,
+
+  "epochs": 50,
+  "early_stopping_patience": 5,
+
+  "device": "mps"
+}

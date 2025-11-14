@@ -1,8 +1,8 @@
 # CLAUDE.md - AI Assistant Context Document
 
-**Last Updated**: 2025-01-29
-**Project Status**: Initial Infrastructure Setup Complete
-**Current Phase**: Phase 1 - Foundation
+**Last Updated**: 2025-10-31
+**Project Status**: Phase 2 ML Foundation Complete
+**Current Phase**: Phase 2 - ML Model & Training
 
 ---
 
@@ -101,16 +101,93 @@ This validates formatting, linting, and tests. **User requirement - do not skip!
 - `pyproject.toml` - Formatting configuration (Black + isort)
 - `scripts/pre-push-checks.sh` - Automated pre-push validation (7 checks)
 
+#### 5. ML Data Pipeline (Phase 2 - COMPLETE ✅)
+- **Dataset**: MovieLens 25M downloaded and processed
+  - 137,883 users, 62,423 movies, 25M ratings
+  - Train/test split (20M train, 5M test)
+  - Temporal split (realistic evaluation)
+
+- **Data Processing** (`src/data/processor.py`):
+  - Load and validate MovieLens data
+  - Handle duplicates and missing values
+  - Create temporal train/test splits
+  - Save as optimized Parquet files
+
+- **Feature Engineering** (`src/data/feature_engineering.py`):
+  - **User Features** (30 dims): rating stats, genre preferences, temporal patterns
+  - **Movie Features** (13 dims): popularity, avg rating, release year, genre encoding
+  - Genre preference matrix (19 genres)
+  - All features saved as Parquet
+
+#### 6. ML Model Architecture (Phase 2 - COMPLETE ✅)
+- **Two-Tower Model** (`src/models/two_tower.py`):
+  - User Tower: Embedding (128-dim) + features → Dense layers → L2 normalized output
+  - Movie Tower: Embedding (128-dim) + features → Dense layers → L2 normalized output
+  - Similarity: Cosine similarity or dot product
+  - Rating prediction: Scale similarity to [0.5, 5.0] range
+  - Batch normalization + dropout for regularization
+  - Xavier initialization for weights
+
+- **Loss Functions** (`src/models/losses.py`):
+  - MSE Loss: Rating prediction accuracy
+  - BPR Loss: Bayesian Personalized Ranking for implicit feedback
+  - Combined Loss: Weighted MSE + BPR (configurable)
+  - Regularized Loss: L2 penalty on embeddings
+
+#### 7. Training Infrastructure (Phase 2 - COMPLETE ✅)
+- **PyTorch Dataset** (`src/training/dataset.py`):
+  - Efficient Parquet loading with PyArrow
+  - User/movie feature integration
+  - Negative sampling for BPR loss (4 negatives per positive)
+  - User-to-index mapping for fast lookups
+
+- **Training Loop** (`src/training/train.py`):
+  - MLflow experiment tracking integration
+  - Early stopping (patience=5)
+  - Learning rate scheduling (ReduceLROnPlateau)
+  - Gradient clipping (max_norm=1.0)
+  - Model checkpointing (save best model)
+  - Progress bars with tqdm
+
+- **Evaluation Metrics** (`src/training/metrics.py`):
+  - **Recall@K**: Fraction of relevant items found in top-K
+  - **Precision@K**: Fraction of top-K that are relevant
+  - **NDCG@K**: Ranking quality with position weighting
+  - **Hit Rate@K**: % users with ≥1 relevant item in top-K
+  - **MAP@K**: Mean Average Precision
+  - **Coverage**: % of catalog items recommended (diversity)
+  - All metrics properly implemented for ranking tasks
+
+- **Training Config** (`configs/train_config.json`):
+  - Model: 128-dim embeddings, 256-dim hidden layers
+  - Training: Adam optimizer, LR=5e-4, batch_size=512
+  - Loss: MSE (can switch to BPR or combined)
+  - 50 epochs with early stopping
+
+#### 8. Embedding Generation (Phase 2 - COMPLETE ✅)
+- **Generator** (`src/embeddings/generate.py`):
+  - Batch inference (1024 batch size)
+  - Supports user and movie features
+  - Saves embeddings as NumPy arrays (.npy)
+  - Also saves as Parquet with metadata
+  - Ready for Qdrant indexing
+
+#### 9. ML Testing (Phase 2 - COMPLETE ✅)
+- **65 comprehensive ML tests** (100% passing):
+  - `test_two_tower.py` (22 tests): Model architecture, forward pass, embeddings
+  - `test_metrics.py` (27 tests): All ranking metrics with edge cases
+  - `test_losses.py` (16 tests): Loss functions, regularization, factory
+  - Parametrized tests for different dimensions and batch sizes
+  - Tests handle batch normalization edge cases
+
 ### 🚧 What's NOT Implemented Yet
 
 #### Critical Missing Components
-1. **ML Pipeline** (HIGH PRIORITY):
-   - Data ingestion (`src/data/`)
-   - Data processing (PySpark/Dask)
-   - Feature engineering
-   - Two-Tower PyTorch model (`src/models/`)
-   - Training pipeline (`src/training/`)
-   - Embedding generation (`src/embeddings/`)
+1. **Model Training** (NEXT PRIORITY):
+   - Train Two-Tower model on ml-25M dataset
+   - Hyperparameter tuning with Optuna
+   - Generate and validate embeddings
+   - Achieve target metrics (Recall@10: 20-28%)
 
 2. **Vector Database Integration** (HIGH PRIORITY):
    - Qdrant client setup (`src/vector_store/`)

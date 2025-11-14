@@ -1,0 +1,47 @@
+
+================================================================================
+ENSEMBLE EVALUATION - EXECUTIVE SUMMARY
+================================================================================
+
+DATE: 2025-11-13
+STATUS: ❌ FAILED - DO NOT DEPLOY
+
+PERFORMANCE RESULTS
+================================================================================
+
+Recall@10:
+  LightGCN:    2.81%
+  Ensemble:    0.13%
+  Change:    -95.24%  ❌
+
+NDCG@10:
+  LightGCN:    5.27%
+  Ensemble:    0.85%
+  Change:    -83.90%  ❌
+
+Hit Rate@10:
+  LightGCN:   24.20%
+  Ensemble:    3.88%
+  Change:    -83.99%  ❌
+
+Coverage:     26.42%
+
+CRITICAL ISSUES
+================================================================================
+
+1. CATASTROPHIC PERFORMANCE: 95% worse than LightGCN alone
+2. SEVERE COVERAGE: Only 44.8% of test items can be recommended
+3. ARCHITECTURE MISMATCH: Models trained on different data splits
+4. NO BUSINESS VALUE: Higher cost, worse quality, same coverage
+
+RECOMMENDATION
+================================================================================
+
+❌ DO NOT DEPLOY THIS ENSEMBLE
+
+Continue using LightGCN as the production model.
+
+For improvement, see detailed recommendations in:
+  Docs/ENSEMBLE_EVALUATION_RESULTS.md
+
+================================================================================
