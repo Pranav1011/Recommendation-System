@@ -46,6 +46,7 @@ data/embeddings/*
 data/embeddings_*/
 data/features/*
 !data/features/.gitkeep
+data/graph_cache/
 *.csv
 *.parquet
 *.npy
