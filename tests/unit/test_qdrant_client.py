@@ -283,7 +283,9 @@ class TestUtilities:
 
     def test_health_check_failure(self, qdrant_manager):
         """Test failed health check."""
-        qdrant_manager.client.get_collections = Mock(side_effect=Exception("Connection failed"))
+        qdrant_manager.client.get_collections = Mock(
+            side_effect=Exception("Connection failed")
+        )
 
         assert qdrant_manager.health_check() is False
 

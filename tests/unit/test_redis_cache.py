@@ -74,7 +74,10 @@ class TestRecommendationsCache:
 
     def test_get_recommendations_hit(self, redis_cache):
         """Test cache hit for recommendations."""
-        recommendations = [(1, 0.9, {"title": "Movie 1"}), (2, 0.8, {"title": "Movie 2"})]
+        recommendations = [
+            (1, 0.9, {"title": "Movie 1"}),
+            (2, 0.8, {"title": "Movie 2"}),
+        ]
 
         redis_cache.client.get = Mock(
             return_value=redis_cache._serialize(recommendations)
@@ -100,7 +103,9 @@ class TestRecommendationsCache:
 
         redis_cache.client.setex = Mock(return_value=True)
 
-        success = redis_cache.set_recommendations(user_id=42, recommendations=recommendations)
+        success = redis_cache.set_recommendations(
+            user_id=42, recommendations=recommendations
+        )
 
         assert success is True
         redis_cache.client.setex.assert_called_once()
@@ -215,7 +220,9 @@ class TestCacheInvalidation:
     def test_invalidate_user(self, redis_cache):
         """Test invalidating user cache."""
         # Mock keys to return 1 key for first pattern, 1 for second, none for third
-        redis_cache.client.keys = Mock(side_effect=[[b"rec:42:1"], [b"user_emb:42"], []])
+        redis_cache.client.keys = Mock(
+            side_effect=[[b"rec:42:1"], [b"user_emb:42"], []]
+        )
         # Mock delete to return 2 for each call (even though only 1 key each)
         redis_cache.client.delete = Mock(return_value=2)
 
