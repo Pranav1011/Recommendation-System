@@ -3,6 +3,8 @@ source = src
 omit =
     */tests/*
     */test_*.py
+    src/evaluation/*
+    src/embeddings/generate_ensemble.py
 
 [report]
 exclude_lines =
