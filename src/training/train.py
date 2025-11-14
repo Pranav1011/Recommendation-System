@@ -14,12 +14,12 @@ import logging
 from pathlib import Path
 from typing import Dict
 
-import mlflow
 import mlflow.pytorch
 import torch
 import torch.optim as optim
 from tqdm import tqdm
 
+import mlflow
 from src.models.losses import create_loss_function
 from src.models.two_tower import create_model
 from src.training.dataset import create_dataloaders
@@ -59,7 +59,7 @@ class Trainer:
         self._create_loss_and_optimizer()
 
         # Training state
-        self.best_val_loss = float("in")
+        self.best_val_loss = float("inf")
         self.patience_counter = 0
         self.current_epoch = 0
 
