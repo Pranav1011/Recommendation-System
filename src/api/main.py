@@ -15,16 +15,14 @@ import logging
 import time
 from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
 import pandas as pd
 from fastapi import Depends, FastAPI, HTTPException, Query, status
-from fastapi.responses import JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from starlette.responses import Response
 
 from src.api.dependencies import (
-    close_qdrant_manager,
-    close_redis_cache,
     get_movie_by_id,
     get_movie_metadata,
     get_qdrant_manager,
@@ -37,7 +35,6 @@ from src.api.models import (
     ColdStartRatingRequest,
     ColdStartResponse,
     DeepHealthResponse,
-    ErrorDetail,
     MovieRecommendation,
     MovieSearchResponse,
     MovieSearchResult,
@@ -462,7 +459,7 @@ async def get_similar_movies(
         )
         for mid, score, meta in results
         if mid != movie_id
-    ][: k]
+    ][:k]
 
     recommendation_counter.labels(endpoint="similar", cached="false").inc()
 
@@ -574,9 +571,7 @@ async def cold_start_recommendations(
     ][:10]
 
     # Generate temporary user ID
-    ratings_hash = hashlib.md5(
-        str(sorted(rated_movie_ids)).encode()
-    ).hexdigest()[:8]
+    ratings_hash = hashlib.md5(str(sorted(rated_movie_ids)).encode()).hexdigest()[:8]
     temp_user_id = f"temp_{ratings_hash}"
 
     recommendation_counter.labels(endpoint="cold_start", cached="false").inc()
@@ -630,16 +625,18 @@ async def get_popular_movies(
                         movie_id=int(row["movieId"]),
                         title=str(row["title"]),
                         score=float(popularity_score),
-                        genres=row["genres"].split("|")
-                        if isinstance(row["genres"], str)
-                        else [],
+                        genres=(
+                            row["genres"].split("|")
+                            if isinstance(row["genres"], str)
+                            else []
+                        ),
                         year=int(row["year"]) if pd.notna(row.get("year")) else None,
-                        avg_rating=float(row["avg_rating"])
-                        if "avg_rating" in row
-                        else None,
-                        popularity=int(row["popularity"])
-                        if "popularity" in row
-                        else None,
+                        avg_rating=(
+                            float(row["avg_rating"]) if "avg_rating" in row else None
+                        ),
+                        popularity=(
+                            int(row["popularity"]) if "popularity" in row else None
+                        ),
                     )
                 )
 
@@ -664,7 +661,9 @@ async def get_popular_movies(
 
     # Filter by genre if specified
     if genre:
-        metadata = metadata[metadata["genres"].str.contains(genre, case=False, na=False)]
+        metadata = metadata[
+            metadata["genres"].str.contains(genre, case=False, na=False)
+        ]
 
     # Sort by popularity and get top N
     top_movies = metadata.nlargest(limit, "popularity")
@@ -720,7 +719,9 @@ async def search_movies(
 
     # Simple case-insensitive search
     query_lower = query.lower()
-    matches = metadata[metadata["title"].str.lower().str.contains(query_lower, na=False)]
+    matches = metadata[
+        metadata["title"].str.lower().str.contains(query_lower, na=False)
+    ]
 
     # Rank by how early the query appears in the title
     def get_relevance(title):
@@ -840,9 +841,6 @@ async def normalize_score_endpoint(
         "range": {"min": min_val, "max": max_val},
     }
 
-
-# Need to import Response for metrics endpoint
-from starlette.responses import Response
 
 if __name__ == "__main__":
     import uvicorn

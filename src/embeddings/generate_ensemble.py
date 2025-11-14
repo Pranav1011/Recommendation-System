@@ -149,16 +149,16 @@ def save_statistics(ensemble: EnsembleRecommender, output_dir: Path) -> None:
     logger.info(f"Number of users: {stats['n_users']:,}")
     logger.info(f"Number of items: {stats['n_items']:,}")
     logger.info(f"Embedding dimension: {stats['embedding_dim']}")
-    logger.info(f"\nModel weights:")
+    logger.info("\nModel weights:")
     logger.info(f"  LightGCN: {stats['lightgcn_weight']:.2f}")
     logger.info(f"  Two-Tower: {stats['twotower_weight']:.2f}")
-    logger.info(f"\nUser embeddings:")
+    logger.info("\nUser embeddings:")
     logger.info(f"  Mean: {stats['user_embedding_stats']['mean']:.4f}")
     logger.info(f"  Std: {stats['user_embedding_stats']['std']:.4f}")
     logger.info(
         f"  L2 norm (mean): {stats['user_embedding_stats']['l2_norm_mean']:.4f}"
     )
-    logger.info(f"\nItem embeddings:")
+    logger.info("\nItem embeddings:")
     logger.info(f"  Mean: {stats['item_embedding_stats']['mean']:.4f}")
     logger.info(f"  Std: {stats['item_embedding_stats']['std']:.4f}")
     logger.info(
@@ -364,14 +364,14 @@ def main():
     logger.info(
         f"  - item_embeddings.npy ({ensemble.item_embeddings.shape[0]:,} x {ensemble.item_embeddings.shape[1]})"
     )
-    logger.info(f"  - user_to_idx.json")
-    logger.info(f"  - item_to_idx.json")
-    logger.info(f"  - embedding_statistics.json")
+    logger.info("  - user_to_idx.json")
+    logger.info("  - item_to_idx.json")
+    logger.info("  - embedding_statistics.json")
     if args.save_metadata:
-        logger.info(f"  - user_embeddings_with_metadata.parquet")
-        logger.info(f"  - movie_embeddings_with_metadata.parquet")
+        logger.info("  - user_embeddings_with_metadata.parquet")
+        logger.info("  - movie_embeddings_with_metadata.parquet")
     if args.generate_samples:
-        logger.info(f"  - sample_recommendations.csv")
+        logger.info("  - sample_recommendations.csv")
     logger.info("=" * 80)
 
 

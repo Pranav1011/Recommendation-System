@@ -9,7 +9,6 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
-
 # ==================== Request Models ====================
 
 
@@ -19,14 +18,14 @@ class RecommendationRequest(BaseModel):
     user_id: int = Field(
         ..., description="User ID to get recommendations for", ge=0, example=123
     )
-    k: int = Field(
-        10, description="Number of recommendations to return", ge=1, le=100
-    )
+    k: int = Field(10, description="Number of recommendations to return", ge=1, le=100)
     min_rating: Optional[float] = Field(
         None, description="Minimum average rating filter", ge=0.0, le=5.0, example=4.0
     )
     genres: Optional[List[str]] = Field(
-        None, description="Filter by genres (OR condition)", example=["Action", "Sci-Fi"]
+        None,
+        description="Filter by genres (OR condition)",
+        example=["Action", "Sci-Fi"],
     )
     min_year: Optional[int] = Field(
         None, description="Minimum release year", ge=1900, le=2100, example=2000
@@ -133,9 +132,7 @@ class RecommendationResponse(BaseModel):
         ..., description="List of recommended movies"
     )
     count: int = Field(..., description="Number of recommendations returned")
-    cached: bool = Field(
-        False, description="Whether results were served from cache"
-    )
+    cached: bool = Field(False, description="Whether results were served from cache")
     filters_applied: Optional[Dict[str, Any]] = Field(
         None, description="Filters that were applied"
     )
@@ -193,16 +190,12 @@ class SimilarMoviesResponse(BaseModel):
 class ColdStartResponse(BaseModel):
     """Response for cold start recommendation endpoint."""
 
-    temp_user_id: str = Field(
-        ..., description="Temporary user ID for this session"
-    )
+    temp_user_id: str = Field(..., description="Temporary user ID for this session")
     recommendations: List[MovieRecommendation] = Field(
         ..., description="Initial recommendations based on ratings"
     )
     count: int = Field(..., description="Number of recommendations returned")
-    ratings_processed: int = Field(
-        ..., description="Number of ratings processed"
-    )
+    ratings_processed: int = Field(..., description="Number of ratings processed")
 
     class Config:
         json_schema_extra = {
@@ -229,12 +222,8 @@ class PopularMoviesResponse(BaseModel):
         ..., description="List of popular movies"
     )
     count: int = Field(..., description="Number of movies returned")
-    genre_filter: Optional[str] = Field(
-        None, description="Genre filter applied"
-    )
-    cached: bool = Field(
-        True, description="Whether results were served from cache"
-    )
+    genre_filter: Optional[str] = Field(None, description="Genre filter applied")
+    cached: bool = Field(True, description="Whether results were served from cache")
 
     class Config:
         json_schema_extra = {
@@ -262,9 +251,7 @@ class MovieSearchResult(BaseModel):
     title: str = Field(..., description="Movie title")
     genres: List[str] = Field(default_factory=list, description="Movie genres")
     year: Optional[int] = Field(None, description="Release year")
-    relevance_score: float = Field(
-        ..., description="Search relevance score"
-    )
+    relevance_score: float = Field(..., description="Search relevance score")
 
     class Config:
         json_schema_extra = {
@@ -282,9 +269,7 @@ class MovieSearchResponse(BaseModel):
     """Response for movie search endpoint."""
 
     query: str = Field(..., description="Search query")
-    results: List[MovieSearchResult] = Field(
-        ..., description="Search results"
-    )
+    results: List[MovieSearchResult] = Field(..., description="Search results")
     count: int = Field(..., description="Number of results")
 
     class Config:
@@ -316,9 +301,7 @@ class ServiceHealth(BaseModel):
     latency_ms: Optional[float] = Field(
         None, description="Response latency in milliseconds"
     )
-    details: Optional[Dict[str, Any]] = Field(
-        None, description="Additional details"
-    )
+    details: Optional[Dict[str, Any]] = Field(None, description="Additional details")
 
 
 class DeepHealthResponse(BaseModel):
@@ -358,12 +341,8 @@ class SystemStats(BaseModel):
 
     total_users: int = Field(..., description="Total number of users")
     total_movies: int = Field(..., description="Total number of movies")
-    cache_stats: Dict[str, Any] = Field(
-        ..., description="Cache statistics"
-    )
-    qdrant_stats: Dict[str, Any] = Field(
-        ..., description="Qdrant statistics"
-    )
+    cache_stats: Dict[str, Any] = Field(..., description="Cache statistics")
+    qdrant_stats: Dict[str, Any] = Field(..., description="Qdrant statistics")
     timestamp: str = Field(..., description="Statistics timestamp")
 
     class Config:

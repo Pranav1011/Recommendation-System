@@ -239,12 +239,10 @@ class UserItemGraph:
     def get_statistics(self) -> Dict[str, float]:
         """Get graph statistics."""
         # User degree stats
-        user_degrees = np.diff(self.adjacency[:self.n_users].tocsr().indptr)
+        user_degrees = np.diff(self.adjacency[: self.n_users].tocsr().indptr)
 
         # Item degree stats
-        item_degrees = np.diff(
-            self.adjacency[self.n_users:].tocsr().indptr
-        )
+        item_degrees = np.diff(self.adjacency[self.n_users :].tocsr().indptr)
 
         return {
             "n_users": self.n_users,

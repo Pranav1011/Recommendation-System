@@ -161,9 +161,7 @@ class QdrantManager:
                     vector=embedding.tolist(),
                     payload={"user_id": int(user_id)},
                 )
-                for user_id, embedding in enumerate(
-                    batch_embeddings, start=batch_start
-                )
+                for user_id, embedding in enumerate(batch_embeddings, start=batch_start)
             ]
 
             # Upload batch
@@ -214,9 +212,7 @@ class QdrantManager:
 
                 # Parse genres
                 genres_str = movie_row.get("genres", "")
-                genres = (
-                    genres_str.split("|") if isinstance(genres_str, str) else []
-                )
+                genres = genres_str.split("|") if isinstance(genres_str, str) else []
 
                 # Create payload with all metadata
                 payload = {

@@ -253,8 +253,12 @@ class HybridLightGCN(nn.Module):
 
         # Combine graph and feature embeddings
         # Weighted combination: (1-w)*graph + w*features
-        user_final = (1 - self.feature_weight) * user_graph_emb + self.feature_weight * user_feat_emb
-        item_final = (1 - self.feature_weight) * item_graph_emb + self.feature_weight * item_feat_emb
+        user_final = (
+            1 - self.feature_weight
+        ) * user_graph_emb + self.feature_weight * user_feat_emb
+        item_final = (
+            1 - self.feature_weight
+        ) * item_graph_emb + self.feature_weight * item_feat_emb
 
         # L2 normalize
         user_final = F.normalize(user_final, p=2, dim=1)
@@ -283,7 +287,9 @@ class HybridLightGCN(nn.Module):
         Returns:
             Predicted scores (batch_size,)
         """
-        user_emb, item_emb = self.forward(graph, user_features, item_features, users, items)
+        user_emb, item_emb = self.forward(
+            graph, user_features, item_features, users, items
+        )
 
         # Inner product
         scores = (user_emb * item_emb).sum(dim=1)
@@ -336,9 +342,7 @@ class HybridLightGCN(nn.Module):
         neg_emb_0 = self.item_embedding(neg_items)
 
         reg_loss = (
-            (user_emb_0**2).sum()
-            + (pos_emb_0**2).sum()
-            + (neg_emb_0**2).sum()
+            (user_emb_0**2).sum() + (pos_emb_0**2).sum() + (neg_emb_0**2).sum()
         ) / (2 * users.size(0))
 
         return bpr_loss, reg_weight * reg_loss
@@ -358,7 +362,9 @@ def create_hybrid_lightgcn_model(config: dict) -> HybridLightGCN:
         n_users=config["n_users"],
         n_items=config.get("n_movies", config.get("n_items")),
         user_feature_dim=config.get("user_feature_dim", 0),
-        item_feature_dim=config.get("movie_feature_dim", config.get("item_feature_dim", 0)),
+        item_feature_dim=config.get(
+            "movie_feature_dim", config.get("item_feature_dim", 0)
+        ),
         embedding_dim=config.get("embedding_dim", 128),
         n_layers=config.get("n_layers", 3),
         feature_hidden_dim=config.get("feature_hidden_dim", 128),
@@ -405,17 +411,19 @@ if __name__ == "__main__":
     values = torch.rand(10000)
     graph = torch.sparse.FloatTensor(indices, values, torch.Size([n_total, n_total]))
 
-    print(f"\n✓ Model created with {sum(p.numel() for p in model.parameters()):,} parameters")
+    print(
+        f"\n✓ Model created with {sum(p.numel() for p in model.parameters()):,} parameters"
+    )
 
     # Test forward pass
     user_emb, item_emb = model(graph)
-    print(f"\n✓ Forward pass:")
+    print("\n✓ Forward pass:")
     print(f"  User embeddings: {user_emb.shape}")
     print(f"  Item embeddings: {item_emb.shape}")
 
     # Test BPR loss
     bpr_loss, reg_loss = model.bpr_loss(users, pos_items, neg_items, graph)
-    print(f"\n✓ BPR Loss:")
+    print("\n✓ BPR Loss:")
     print(f"  BPR loss: {bpr_loss.item():.4f}")
     print(f"  Reg loss: {reg_loss.item():.6f}")
 

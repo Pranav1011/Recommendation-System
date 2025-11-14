@@ -97,9 +97,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         request_id = getattr(request.state, "request_id", "unknown")
 
         # Log request
-        logger.info(
-            f"[{request_id}] {request.method} {request.url.path} - Starting"
-        )
+        logger.info(f"[{request_id}] {request.method} {request.url.path} - Starting")
 
         # Process request
         try:
@@ -221,20 +219,20 @@ def get_cors_middleware():
     Get configured CORS middleware for frontend integration.
 
     Returns:
-        CORSMiddleware instance
+        Dict with CORS configuration
     """
     # TODO: In production, restrict to specific origins
-    return CORSMiddleware(
-        allow_origins=[
+    return {
+        "allow_origins": [
             "http://localhost:3000",  # Next.js dev server
             "http://localhost:8000",  # Local API
             "https://*.vercel.app",  # Vercel deployments
         ],
-        allow_credentials=True,
-        allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
-        allow_headers=["*"],  # Allow all headers
-        expose_headers=["X-Request-ID"],  # Expose custom headers to frontend
-    )
+        "allow_credentials": True,
+        "allow_methods": ["*"],  # Allow all methods (GET, POST, etc.)
+        "allow_headers": ["*"],  # Allow all headers
+        "expose_headers": ["X-Request-ID"],  # Expose custom headers to frontend
+    }
 
 
 # ==================== Rate Limiting (Optional) ====================
@@ -309,14 +307,7 @@ def setup_middleware(app):
 
     # 2. CORS (before request processing)
     cors_config = get_cors_middleware()
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=cors_config.allow_origins,
-        allow_credentials=cors_config.allow_credentials,
-        allow_methods=cors_config.allow_methods,
-        allow_headers=cors_config.allow_headers,
-        expose_headers=cors_config.expose_headers,
-    )
+    app.add_middleware(CORSMiddleware, **cors_config)
 
     # 3. Rate limiting (optional - comment out if not needed)
     # app.add_middleware(RateLimitMiddleware, requests_per_minute=100)

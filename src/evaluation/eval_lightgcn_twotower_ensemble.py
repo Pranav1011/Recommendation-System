@@ -48,7 +48,7 @@ def main():
     lg_checkpoint = torch.load(
         "models/checkpoints/best_model_lightgcn_optimized.pt",
         map_location=device,
-        weights_only=False
+        weights_only=False,
     )
 
     with open("configs/train_config_lightgcn_optimized.json") as f:
@@ -76,13 +76,15 @@ def main():
         item_to_idx_lg = graph_obj.item_to_idx
 
     # Create LightGCN model
-    lg_model = create_lightgcn_model({
-        "n_users": lg_config["n_users"],
-        "n_movies": lg_config["n_movies"],
-        "embedding_dim": lg_config["model"]["embedding_dim"],
-        "n_layers": lg_config["model"]["n_layers"],
-        "dropout_rate": 0.0,
-    })
+    lg_model = create_lightgcn_model(
+        {
+            "n_users": lg_config["n_users"],
+            "n_movies": lg_config["n_movies"],
+            "embedding_dim": lg_config["model"]["embedding_dim"],
+            "n_layers": lg_config["model"]["n_layers"],
+            "dropout_rate": 0.0,
+        }
+    )
     lg_model.load_state_dict(lg_checkpoint["model_state_dict"])
     lg_model.to(device)
     lg_model.eval()
@@ -92,9 +94,7 @@ def main():
     # ========== Load Two-Tower ==========
     logger.info("\n[2/6] Loading Two-Tower...")
     tt_checkpoint = torch.load(
-        "models/checkpoints/best_model_bpr.pt",
-        map_location=device,
-        weights_only=False
+        "models/checkpoints/best_model_bpr.pt", map_location=device, weights_only=False
     )
 
     # Use config from checkpoint (more reliable)
@@ -105,7 +105,9 @@ def main():
         with open("configs/train_config_bpr.json") as f:
             tt_config = json.load(f)
         # Override with inferred dimensions from checkpoint
-        sample_weight = tt_checkpoint["model_state_dict"]["user_tower.user_embedding.weight"]
+        sample_weight = tt_checkpoint["model_state_dict"][
+            "user_tower.user_embedding.weight"
+        ]
         tt_config["embedding_dim"] = sample_weight.shape[1]
         hidden_weight = tt_checkpoint["model_state_dict"]["user_tower.fc1.weight"]
         tt_config["hidden_dim"] = hidden_weight.shape[0]
@@ -125,16 +127,13 @@ def main():
     user_feats = torch.tensor(
         user_feats_df.drop(columns=["userId"]).values,
         dtype=torch.float32,
-        device=device
+        device=device,
     )
     movie_feats = torch.tensor(
         movie_feats_df.drop(columns=["movieId"]).values,
         dtype=torch.float32,
-        device=device
+        device=device,
     )
-
-    user_to_idx_tt = {uid: idx for idx, uid in enumerate(user_feats_df["userId"])}
-    item_to_idx_tt = {mid: idx for idx, mid in enumerate(movie_feats_df["movieId"])}
 
     logger.info("✓ Two-Tower loaded")
 
@@ -148,13 +147,21 @@ def main():
         lg_item_emb = torch.nn.functional.normalize(lg_item_emb, dim=1)
 
         # Two-Tower embeddings
-        tt_user_emb = tt_model.user_tower(torch.arange(len(user_feats), device=device), user_feats)
-        tt_movie_emb = tt_model.movie_tower(torch.arange(len(movie_feats), device=device), movie_feats)
+        tt_user_emb = tt_model.user_tower(
+            torch.arange(len(user_feats), device=device), user_feats
+        )
+        tt_movie_emb = tt_model.movie_tower(
+            torch.arange(len(movie_feats), device=device), movie_feats
+        )
         tt_user_emb = torch.nn.functional.normalize(tt_user_emb, dim=1)
         tt_movie_emb = torch.nn.functional.normalize(tt_movie_emb, dim=1)
 
-    logger.info(f"✓ LightGCN: {lg_user_emb.shape[0]} users, {lg_item_emb.shape[0]} items")
-    logger.info(f"✓ Two-Tower: {tt_user_emb.shape[0]} users, {tt_movie_emb.shape[0]} items")
+    logger.info(
+        f"✓ LightGCN: {lg_user_emb.shape[0]} users, {lg_item_emb.shape[0]} items"
+    )
+    logger.info(
+        f"✓ Two-Tower: {tt_user_emb.shape[0]} users, {tt_movie_emb.shape[0]} items"
+    )
 
     # ========== Load Test Data ==========
     logger.info("\n[4/6] Loading test data...")
@@ -167,7 +174,9 @@ def main():
     test_df["user_idx_lg"] = test_df["user_idx_lg"].astype(int)
     test_df["item_idx_lg"] = test_df["item_idx_lg"].astype(int)
 
-    test_interactions = test_df.groupby("user_idx_lg")["item_idx_lg"].apply(list).to_dict()
+    test_interactions = (
+        test_df.groupby("user_idx_lg")["item_idx_lg"].apply(list).to_dict()
+    )
     logger.info(f"✓ {len(test_interactions)} test users")
 
     # ========== Evaluate Ensemble ==========
@@ -179,7 +188,9 @@ def main():
     results = {}
 
     for lg_weight in weights:
-        logger.info(f"\n  Testing LightGCN={lg_weight:.1f}, Two-Tower={1-lg_weight:.1f}")
+        logger.info(
+            f"\n  Testing LightGCN={lg_weight:.1f}, Two-Tower={1-lg_weight:.1f}"
+        )
 
         ndcgs = []
         recalls = []
@@ -190,7 +201,9 @@ def main():
 
             # Two-Tower scores (handle index mismatch)
             if user_idx < len(tt_user_emb):
-                scores_tt = torch.matmul(tt_movie_emb, tt_user_emb[user_idx]).cpu().numpy()
+                scores_tt = (
+                    torch.matmul(tt_movie_emb, tt_user_emb[user_idx]).cpu().numpy()
+                )
             else:
                 scores_tt = np.zeros_like(scores_lg)
 
@@ -219,14 +232,18 @@ def main():
         }
 
         logger.info(f"    NDCG@10:   {np.mean(ndcgs):.4f} ({np.mean(ndcgs)*100:.2f}%)")
-        logger.info(f"    Recall@10: {np.mean(recalls):.4f} ({np.mean(recalls)*100:.2f}%)")
+        logger.info(
+            f"    Recall@10: {np.mean(recalls):.4f} ({np.mean(recalls)*100:.2f}%)"
+        )
 
     # ========== Results Summary ==========
     logger.info("\n" + "=" * 80)
     logger.info("[6/6] ENSEMBLE RESULTS SUMMARY")
     logger.info("=" * 80)
 
-    logger.info("\n{:^15} | {:^15} | {:^15}".format("LightGCN Wt", "NDCG@10", "Recall@10"))
+    logger.info(
+        "\n{:^15} | {:^15} | {:^15}".format("LightGCN Wt", "NDCG@10", "Recall@10")
+    )
     logger.info("-" * 50)
     for wt, metrics in sorted(results.items()):
         logger.info(
@@ -235,14 +252,18 @@ def main():
 
     best_weight = max(results.items(), key=lambda x: x[1]["ndcg@10"])
     logger.info("\n" + "=" * 80)
-    logger.info(f"BEST: LightGCN={best_weight[0]:.1f}, NDCG@10={best_weight[1]['ndcg@10']:.4f}")
+    logger.info(
+        f"BEST: LightGCN={best_weight[0]:.1f}, NDCG@10={best_weight[1]['ndcg@10']:.4f}"
+    )
     logger.info("=" * 80)
 
     # Baseline comparison
     logger.info("\nComparison:")
-    logger.info(f"  LightGCN only (1.0):    NDCG@10 = 0.0527 (5.27%)")
-    logger.info(f"  Ensemble (best):        NDCG@10 = {best_weight[1]['ndcg@10']:.4f} ({best_weight[1]['ndcg@10']*100:.2f}%)")
-    improvement = (best_weight[1]['ndcg@10'] - 0.0527) / 0.0527 * 100
+    logger.info("  LightGCN only (1.0):    NDCG@10 = 0.0527 (5.27%)")
+    logger.info(
+        f"  Ensemble (best):        NDCG@10 = {best_weight[1]['ndcg@10']:.4f} ({best_weight[1]['ndcg@10']*100:.2f}%)"
+    )
+    improvement = (best_weight[1]["ndcg@10"] - 0.0527) / 0.0527 * 100
     logger.info(f"  Improvement:            {improvement:+.1f}%")
 
     # Save results

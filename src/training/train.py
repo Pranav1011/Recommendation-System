@@ -12,7 +12,7 @@ import argparse
 import json
 import logging
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict
 
 import mlflow.pytorch
 import torch
@@ -59,7 +59,7 @@ class Trainer:
         self._create_loss_and_optimizer()
 
         # Training state
-        self.best_val_loss = float("inf")
+        self.best_val_loss = float("in")
         self.patience_counter = 0
         self.current_epoch = 0
 
@@ -107,7 +107,7 @@ class Trainer:
         self.n_movies = dataset.get_num_movies()
         user_feat_dim, movie_feat_dim = dataset.get_feature_dims()
 
-        logger.info(f"Dataset info:")
+        logger.info("Dataset info:")
         logger.info(f"  - Users: {self.n_users:,}")
         logger.info(f"  - Movies: {self.n_movies:,}")
         logger.info(f"  - User feature dim: {user_feat_dim}")
@@ -164,9 +164,7 @@ class Trainer:
             warmup_epochs = self.config.get("warmup_epochs", 5)
             total_epochs = self.config.get("epochs", 50)
             self.scheduler = optim.lr_scheduler.CosineAnnealingLR(
-                self.optimizer,
-                T_max=total_epochs - warmup_epochs,
-                eta_min=1e-6
+                self.optimizer, T_max=total_epochs - warmup_epochs, eta_min=1e-6
             )
             self.warmup_epochs = warmup_epochs
             self.use_warmup = True
@@ -237,9 +235,15 @@ class Trainer:
                     neg_movie_ids = batch["neg_movie_ids"].to(self.device)
                     batch_size, n_negatives = neg_movie_ids.shape
                     neg_movie_ids_flat = neg_movie_ids.reshape(-1)
-                    neg_movie_emb_flat = self.model.get_movie_embedding(neg_movie_ids_flat, None)
-                    neg_movie_emb = neg_movie_emb_flat.reshape(batch_size, n_negatives, -1)
-                loss = self.criterion(pred_ratings, ratings, user_emb, movie_emb, neg_movie_emb)
+                    neg_movie_emb_flat = self.model.get_movie_embedding(
+                        neg_movie_ids_flat, None
+                    )
+                    neg_movie_emb = neg_movie_emb_flat.reshape(
+                        batch_size, n_negatives, -1
+                    )
+                loss = self.criterion(
+                    pred_ratings, ratings, user_emb, movie_emb, neg_movie_emb
+                )
             else:
                 # MSELoss
                 loss = self.criterion(pred_ratings, ratings)
@@ -368,7 +372,7 @@ class Trainer:
             )
 
             # Learning rate scheduling
-            if hasattr(self, 'use_warmup') and self.use_warmup:
+            if hasattr(self, "use_warmup") and self.use_warmup:
                 # Cosine annealing: step every epoch (after warmup)
                 if epoch >= self.warmup_epochs:
                     self.scheduler.step()
@@ -408,7 +412,7 @@ class Trainer:
                 )
                 break
 
-        logger.info(f"\nTraining complete!")
+        logger.info("\nTraining complete!")
         logger.info(f"Best validation loss: {self.best_val_loss:.4f}")
 
         # Log best model to MLflow

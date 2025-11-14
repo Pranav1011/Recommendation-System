@@ -299,7 +299,7 @@ def create_dataloaders(
         pin_memory=use_pin_memory,
     )
 
-    logger.info(f"Created dataloaders:")
+    logger.info("Created dataloaders:")
     logger.info(
         f"  - Train: {len(train_dataset):,} samples, {len(train_loader)} batches"
     )
@@ -330,7 +330,7 @@ if __name__ == "__main__":
             n_negatives=4,
         )
 
-        print(f"✓ Dataset created successfully")
+        print("✓ Dataset created successfully")
         print(f"  - Number of samples: {len(dataset):,}")
         print(f"  - Number of users: {dataset.get_num_users():,}")
         print(f"  - Number of movies: {dataset.get_num_movies():,}")
@@ -341,7 +341,7 @@ if __name__ == "__main__":
 
         # Test getting a sample
         sample = dataset[0]
-        print(f"\n✓ Sample structure:")
+        print("\n✓ Sample structure:")
         for key, value in sample.items():
             if isinstance(value, torch.Tensor):
                 print(f"  - {key}: shape {value.shape}, dtype {value.dtype}")
@@ -360,7 +360,7 @@ if __name__ == "__main__":
 
             # Test batch loading
             batch = next(iter(train_loader))
-            print(f"\n✓ Batch structure:")
+            print("\n✓ Batch structure:")
             for key, value in batch.items():
                 if isinstance(value, torch.Tensor):
                     print(f"  - {key}: shape {value.shape}, dtype {value.dtype}")

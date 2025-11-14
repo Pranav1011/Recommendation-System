@@ -411,7 +411,7 @@ if __name__ == "__main__":
 
     ratings, user_emb, movie_emb = model(user_ids, movie_ids)
 
-    print(f"✓ Model created successfully")
+    print("✓ Model created successfully")
     print(f"  - User embeddings shape: {user_emb.shape}")
     print(f"  - Movie embeddings shape: {movie_emb.shape}")
     print(f"  - Predicted ratings shape: {ratings.shape}")

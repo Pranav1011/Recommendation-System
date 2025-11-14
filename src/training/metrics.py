@@ -12,7 +12,7 @@ Implements proper ranking metrics:
 These metrics are specifically designed for ranking/recommendation tasks.
 """
 
-from typing import Dict, List, Set, Union
+from typing import Dict, List, Set
 
 import numpy as np
 
@@ -342,7 +342,7 @@ if __name__ == "__main__":
         predictions, ground_truth, relevance_scores, n_items, k_values=[3, 5]
     )
 
-    print(f"\nAll metrics:")
+    print("\nAll metrics:")
     for metric_name, value in sorted(all_metrics.items()):
         print(f"  {metric_name}: {value:.4f}")
 

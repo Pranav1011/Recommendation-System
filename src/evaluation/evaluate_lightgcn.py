@@ -43,7 +43,9 @@ def compute_precision(ground_truth: np.ndarray, predictions: np.ndarray) -> floa
 
 def compute_ndcg(ground_truth: np.ndarray, predictions: np.ndarray, k: int) -> float:
     """Compute NDCG@K for single user."""
-    relevance = np.array([1.0 if item in ground_truth else 0.0 for item in predictions[:k]])
+    relevance = np.array(
+        [1.0 if item in ground_truth else 0.0 for item in predictions[:k]]
+    )
 
     if relevance.sum() == 0:
         return 0.0
@@ -109,12 +111,9 @@ def evaluate_model(
     logger.info(f"Evaluating on {len(eval_users)} users...")
 
     # Initialize metrics storage
-    all_metrics = {k: {
-        "recall": [],
-        "precision": [],
-        "ndcg": [],
-        "hit_rate": []
-    } for k in k_values}
+    all_metrics = {
+        k: {"recall": [], "precision": [], "ndcg": [], "hit_rate": []} for k in k_values
+    }
 
     # Evaluate each user
     for user_idx in tqdm(eval_users, desc="Evaluating users"):
@@ -154,10 +153,18 @@ def evaluate_model(
     logger.info("=" * 80)
     for k in k_values:
         logger.info(f"\nTop-{k} Metrics:")
-        logger.info(f"  Recall@{k}:    {final_metrics[f'recall@{k}']:.4f} ({final_metrics[f'recall@{k}']*100:.2f}%)")
-        logger.info(f"  Precision@{k}: {final_metrics[f'precision@{k}']:.4f} ({final_metrics[f'precision@{k}']*100:.2f}%)")
-        logger.info(f"  NDCG@{k}:      {final_metrics[f'ndcg@{k}']:.4f} ({final_metrics[f'ndcg@{k}']*100:.2f}%)")
-        logger.info(f"  Hit Rate@{k}:  {final_metrics[f'hit_rate@{k}']:.4f} ({final_metrics[f'hit_rate@{k}']*100:.2f}%)")
+        logger.info(
+            f"  Recall@{k}:    {final_metrics[f'recall@{k}']:.4f} ({final_metrics[f'recall@{k}']*100:.2f}%)"
+        )
+        logger.info(
+            f"  Precision@{k}: {final_metrics[f'precision@{k}']:.4f} ({final_metrics[f'precision@{k}']*100:.2f}%)"
+        )
+        logger.info(
+            f"  NDCG@{k}:      {final_metrics[f'ndcg@{k}']:.4f} ({final_metrics[f'ndcg@{k}']*100:.2f}%)"
+        )
+        logger.info(
+            f"  Hit Rate@{k}:  {final_metrics[f'hit_rate@{k}']:.4f} ({final_metrics[f'hit_rate@{k}']*100:.2f}%)"
+        )
     logger.info("=" * 80)
 
     return final_metrics
@@ -200,7 +207,9 @@ def main():
     logger.info("Building graph...")
     data_dir = Path(config["data_dir"])
 
-    graph_cache_file = Path(config.get("graph_cache_dir", "data/graph_cache")) / "lightgcn_graph.pt"
+    graph_cache_file = (
+        Path(config.get("graph_cache_dir", "data/graph_cache")) / "lightgcn_graph.pt"
+    )
     if graph_cache_file.exists():
         logger.info("Loading cached graph...")
         cache = torch.load(graph_cache_file, weights_only=False)

@@ -91,12 +91,10 @@ class BPRLoss(nn.Module):
 
             # Mask out positive item for each user (diagonal)
             mask = torch.eye(batch_size, device=user_embeddings.device).bool()
-            neg_scores = all_scores.masked_fill(mask, float('-inf'))
+            neg_scores = all_scores.masked_fill(mask, float("-inf"))
 
             # BPR: positive should rank higher than all negatives
-            loss = -torch.mean(
-                pos_scores - torch.logsumexp(neg_scores, dim=1)
-            )
+            loss = -torch.mean(pos_scores - torch.logsumexp(neg_scores, dim=1))
             return loss
 
         # EXPLICIT NEGATIVES with SAMPLED SOFTMAX (efficient for 100+ negatives!)
@@ -105,24 +103,35 @@ class BPRLoss(nn.Module):
             batch_size, n_negatives, embed_dim = neg_item_embeddings.shape
 
             # Compute negative scores: (batch_size, n_negatives)
-            user_emb_expanded = user_embeddings.unsqueeze(1)  # (batch_size, 1, embed_dim)
-            neg_scores = (user_emb_expanded * neg_item_embeddings).sum(dim=2)  # (batch_size, n_negatives)
+            user_emb_expanded = user_embeddings.unsqueeze(
+                1
+            )  # (batch_size, 1, embed_dim)
+            neg_scores = (user_emb_expanded * neg_item_embeddings).sum(
+                dim=2
+            )  # (batch_size, n_negatives)
 
             # For many negatives (>10), use sampled softmax (more efficient)
             if n_negatives > 10:
                 # Concatenate positive and negative scores
                 # Positive score should be at index 0
-                all_scores = torch.cat([
-                    pos_scores.unsqueeze(1),  # (batch_size, 1)
-                    neg_scores  # (batch_size, n_negatives)
-                ], dim=1)  # (batch_size, 1 + n_negatives)
+                all_scores = torch.cat(
+                    [
+                        pos_scores.unsqueeze(1),  # (batch_size, 1)
+                        neg_scores,  # (batch_size, n_negatives)
+                    ],
+                    dim=1,
+                )  # (batch_size, 1 + n_negatives)
 
                 # Cross-entropy loss: positive should have highest score (index 0)
-                targets = torch.zeros(batch_size, dtype=torch.long, device=user_embeddings.device)
+                targets = torch.zeros(
+                    batch_size, dtype=torch.long, device=user_embeddings.device
+                )
                 loss = F.cross_entropy(all_scores, targets)
             else:
                 # For few negatives, use pairwise sigmoid (original BPR)
-                pos_scores_expanded = pos_scores.unsqueeze(1).expand(batch_size, n_negatives)
+                pos_scores_expanded = pos_scores.unsqueeze(1).expand(
+                    batch_size, n_negatives
+                )
                 loss = -F.logsigmoid(pos_scores_expanded - neg_scores).mean()
         else:
             # Single negative: (batch_size, embedding_dim)
@@ -321,7 +330,9 @@ class DiversityLoss(nn.Module):
             diversity_loss = -torch.var(scores)  # Negative because we want to maximize
         else:
             # All items (n_items != batch_size)
-            scores = torch.mm(user_embeddings, item_embeddings.T)  # (batch_size, n_items)
+            scores = torch.mm(
+                user_embeddings, item_embeddings.T
+            )  # (batch_size, n_items)
 
             # Compute item popularity across users
             item_popularity = scores.mean(dim=0)  # (n_items,)
@@ -420,8 +431,7 @@ def create_loss_function(config: dict) -> nn.Module:
         diversity_weight = config.get("diversity_weight", 0.1)
         use_in_batch = config.get("negative_sampling", False) is False
         base_loss = BPRWithDiversityLoss(
-            diversity_weight=diversity_weight,
-            use_in_batch_negatives=use_in_batch
+            diversity_weight=diversity_weight, use_in_batch_negatives=use_in_batch
         )
     elif loss_type == "combined":
         mse_weight = config.get("mse_weight", 0.7)

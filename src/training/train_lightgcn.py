@@ -15,7 +15,6 @@ import logging
 from pathlib import Path
 from typing import Dict, Tuple
 
-import mlflow
 import mlflow.pytorch
 import numpy as np
 import pandas as pd
@@ -23,6 +22,7 @@ import torch
 import torch.optim as optim
 from tqdm import tqdm
 
+import mlflow
 from src.data.graph_builder import build_graph
 from src.models.lightgcn import create_lightgcn_model
 
@@ -53,7 +53,9 @@ def compute_precision(ground_truth: np.ndarray, predictions: np.ndarray) -> floa
 def compute_ndcg(ground_truth: np.ndarray, predictions: np.ndarray, k: int) -> float:
     """Compute NDCG@K for single user."""
     # Create relevance scores (1 if in ground truth, 0 otherwise)
-    relevance = np.array([1.0 if item in ground_truth else 0.0 for item in predictions[:k]])
+    relevance = np.array(
+        [1.0 if item in ground_truth else 0.0 for item in predictions[:k]]
+    )
 
     if relevance.sum() == 0:
         return 0.0
@@ -249,7 +251,9 @@ class LightGCNTrainer:
         self.train_interactions = (
             train_df.groupby("user_idx")["item_idx"].apply(set).to_dict()
         )
-        logger.info(f"Train data: {len(train_df):,} interactions, {len(self.train_interactions):,} users")
+        logger.info(
+            f"Train data: {len(train_df):,} interactions, {len(self.train_interactions):,} users"
+        )
 
         # Load test data
         test_path = data_dir / "test_ratings.parquet"
@@ -258,7 +262,9 @@ class LightGCNTrainer:
 
         # Filter high ratings only (same as training)
         test_df = test_df[test_df["rating"] >= min_rating].copy()
-        logger.info(f"After filtering (rating >= {min_rating}): {len(test_df):,} interactions")
+        logger.info(
+            f"After filtering (rating >= {min_rating}): {len(test_df):,} interactions"
+        )
 
         # Map to indices
         test_df["user_idx"] = test_df["userId"].map(self.user_to_idx)
@@ -278,7 +284,9 @@ class LightGCNTrainer:
         )
         logger.info(f"Test users: {len(self.test_interactions):,}")
 
-    def _create_train_batch(self, batch_size: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    def _create_train_batch(
+        self, batch_size: int
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Create a training batch with BPR sampling.
 
@@ -409,11 +417,8 @@ class LightGCNTrainer:
         eval_users = np.random.choice(
             list(self.test_interactions.keys()),
             size=min(100, len(self.test_interactions)),
-            replace=False
+            replace=False,
         )
-
-        # Pre-compute for max K (saves computation)
-        max_k = max(k_values)
 
         for k in k_values:
             recalls = []
@@ -478,7 +483,9 @@ class LightGCNTrainer:
         # MLflow setup
         mlflow_config = self.config.get("mlflow", {})
         mlflow.set_tracking_uri(mlflow_config.get("tracking_uri", "file:./mlruns"))
-        mlflow.set_experiment(mlflow_config.get("experiment_name", "lightgcn_experiments"))
+        mlflow.set_experiment(
+            mlflow_config.get("experiment_name", "lightgcn_experiments")
+        )
 
         with mlflow.start_run(run_name=mlflow_config.get("run_name", "lightgcn_run")):
             # Log config

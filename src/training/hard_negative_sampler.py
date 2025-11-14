@@ -7,10 +7,9 @@ Samples challenging negatives instead of random ones:
 3. Random: For diversity
 """
 
-import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import List, Set
 
 import numpy as np
 import pandas as pd
@@ -73,7 +72,9 @@ class HardNegativeSampler:
         logger.info("Hard Negative Sampler initialized!")
         logger.info(f"  Total movies: {self.n_movies}")
         logger.info(f"  Total users: {len(self.user_rated_items)}")
-        logger.info(f"  Avg ratings per user: {np.mean([len(items) for items in self.user_rated_items.values()]):.1f}")
+        logger.info(
+            f"  Avg ratings per user: {np.mean([len(items) for items in self.user_rated_items.values()]):.1f}"
+        )
 
     def _load_data(self, train_ratings_path: Path, movies_path: Path):
         """Load training ratings and movies."""
@@ -86,13 +87,11 @@ class HardNegativeSampler:
     def _compute_item_popularity(self):
         """Compute item popularity (rating counts)."""
         logger.info("Computing item popularity...")
-        popularity = self.ratings_df.groupby('movieId').size().to_dict()
+        popularity = self.ratings_df.groupby("movieId").size().to_dict()
 
         # Sort by popularity
         self.popular_items = sorted(
-            popularity.items(),
-            key=lambda x: x[1],
-            reverse=True
+            popularity.items(), key=lambda x: x[1], reverse=True
         )
 
         # Convert to movie_id -> rank mapping
@@ -101,15 +100,15 @@ class HardNegativeSampler:
         }
 
         logger.info(f"  Most popular movie has {self.popular_items[0][1]:,} ratings")
-        logger.info(f"  Median popularity: {np.median(list(self.item_popularity.values())):.0f} ratings")
+        logger.info(
+            f"  Median popularity: {np.median(list(self.item_popularity.values())):.0f} ratings"
+        )
 
     def _compute_user_rated_items(self):
         """Compute set of items each user has rated."""
         logger.info("Computing user rated items...")
         self.user_rated_items = (
-            self.ratings_df.groupby('userId')['movieId']
-            .apply(set)
-            .to_dict()
+            self.ratings_df.groupby("userId")["movieId"].apply(set).to_dict()
         )
 
     def _compute_movie_genres(self):
@@ -120,12 +119,12 @@ class HardNegativeSampler:
         def parse_genres(genre_str):
             if pd.isna(genre_str) or genre_str == "(no genres listed)":
                 return []
-            return genre_str.split('|')
+            return genre_str.split("|")
 
         self.movie_genres = {}
         for _, row in self.movies_df.iterrows():
-            movie_id = row['movieId']
-            genres = parse_genres(row['genres'])
+            movie_id = row["movieId"]
+            genres = parse_genres(row["genres"])
             self.movie_genres[movie_id] = genres
 
         # Count unique genres
@@ -177,15 +176,11 @@ class HardNegativeSampler:
         negatives.extend(popular_negatives)
 
         # 2. Sample genre-based negatives
-        genre_negatives = self._sample_genre_negatives(
-            user_id, rated_items, n_genre
-        )
+        genre_negatives = self._sample_genre_negatives(user_id, rated_items, n_genre)
         negatives.extend(genre_negatives)
 
         # 3. Sample random negatives
-        random_negatives = self._sample_random_negatives(
-            rated_items, n_random
-        )
+        random_negatives = self._sample_random_negatives(rated_items, n_random)
         negatives.extend(random_negatives)
 
         # Ensure we have exactly n_negatives (pad with random if needed)
@@ -197,15 +192,13 @@ class HardNegativeSampler:
         return np.array(negatives[:n_negatives])
 
     def _sample_popular_negatives(
-        self,
-        user_id: int,
-        rated_items: Set[int],
-        n_samples: int
+        self, user_id: int, rated_items: Set[int], n_samples: int
     ) -> List[int]:
         """Sample popular items user didn't rate."""
         # Get top K popular items user hasn't rated
         candidates = [
-            movie_id for movie_id, _ in self.popular_items[:self.popularity_top_k]
+            movie_id
+            for movie_id, _ in self.popular_items[: self.popularity_top_k]
             if movie_id not in rated_items
         ]
 
@@ -214,26 +207,16 @@ class HardNegativeSampler:
 
         # Sample with probability proportional to popularity
         # (more popular = higher chance of being sampled)
-        weights = np.array([
-            self.item_popularity[movie_id] for movie_id in candidates
-        ])
+        weights = np.array([self.item_popularity[movie_id] for movie_id in candidates])
         weights = weights / weights.sum()
 
         n_samples = min(n_samples, len(candidates))
-        sampled = np.random.choice(
-            candidates,
-            size=n_samples,
-            replace=False,
-            p=weights
-        )
+        sampled = np.random.choice(candidates, size=n_samples, replace=False, p=weights)
 
         return sampled.tolist()
 
     def _sample_genre_negatives(
-        self,
-        user_id: int,
-        rated_items: Set[int],
-        n_samples: int
+        self, user_id: int, rated_items: Set[int], n_samples: int
     ) -> List[int]:
         """Sample items from same genres user has rated."""
         # Get user's preferred genres
@@ -259,9 +242,7 @@ class HardNegativeSampler:
         return sampled.tolist()
 
     def _sample_random_negatives(
-        self,
-        rated_items: Set[int],
-        n_samples: int
+        self, rated_items: Set[int], n_samples: int
     ) -> List[int]:
         """Sample random items for diversity."""
         negatives = []

@@ -58,7 +58,7 @@ class LightGCN(nn.Module):
         self.n_layers = n_layers
         self.dropout_rate = dropout_rate
 
-        logger.info(f"Initializing LightGCN:")
+        logger.info("Initializing LightGCN:")
         logger.info(f"  Users: {n_users:,}")
         logger.info(f"  Items: {n_items:,}")
         logger.info(f"  Embedding dim: {embedding_dim}")
@@ -145,7 +145,9 @@ class LightGCN(nn.Module):
         # Otherwise return all embeddings
         return user_all_embeddings, item_all_embeddings
 
-    def get_user_embedding(self, users: torch.Tensor, graph: torch.sparse.FloatTensor) -> torch.Tensor:
+    def get_user_embedding(
+        self, users: torch.Tensor, graph: torch.sparse.FloatTensor
+    ) -> torch.Tensor:
         """
         Get embeddings for specific users.
 
@@ -159,7 +161,9 @@ class LightGCN(nn.Module):
         user_embeddings, _ = self.forward(graph)
         return user_embeddings[users]
 
-    def get_item_embedding(self, items: torch.Tensor, graph: torch.sparse.FloatTensor) -> torch.Tensor:
+    def get_item_embedding(
+        self, items: torch.Tensor, graph: torch.sparse.FloatTensor
+    ) -> torch.Tensor:
         """
         Get embeddings for specific items.
 
@@ -242,9 +246,7 @@ class LightGCN(nn.Module):
         neg_emb_0 = self.item_embedding(neg_items)
 
         reg_loss = (
-            (user_emb_0**2).sum()
-            + (pos_emb_0**2).sum()
-            + (neg_emb_0**2).sum()
+            (user_emb_0**2).sum() + (pos_emb_0**2).sum() + (neg_emb_0**2).sum()
         ) / (2 * users.size(0))
 
         return bpr_loss, reg_weight * reg_loss
@@ -300,7 +302,7 @@ if __name__ == "__main__":
 
     # Test forward pass
     user_all_emb, item_all_emb = model(graph)
-    print(f"\n✓ Forward pass:")
+    print("\n✓ Forward pass:")
     print(f"  User embeddings: {user_all_emb.shape}")
     print(f"  Item embeddings: {item_all_emb.shape}")
 
@@ -311,13 +313,13 @@ if __name__ == "__main__":
     neg_items = torch.randint(0, config["n_movies"], (batch_size,))
 
     scores = model.predict(users, pos_items, graph)
-    print(f"\n✓ Prediction:")
+    print("\n✓ Prediction:")
     print(f"  Scores shape: {scores.shape}")
     print(f"  Score range: [{scores.min():.2f}, {scores.max():.2f}]")
 
     # Test BPR loss
     bpr_loss, reg_loss = model.bpr_loss(users, pos_items, neg_items, graph)
-    print(f"\n✓ BPR Loss:")
+    print("\n✓ BPR Loss:")
     print(f"  BPR loss: {bpr_loss.item():.4f}")
     print(f"  Reg loss: {reg_loss.item():.6f}")
 

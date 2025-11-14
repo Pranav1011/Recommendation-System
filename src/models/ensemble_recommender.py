@@ -47,7 +47,9 @@ def load_twotower_user_mapping(train_ratings_path: Path) -> Dict[int, int]:
     user_to_idx = {int(uid): idx for idx, uid in enumerate(unique_users)}
 
     logger.info(f"Loaded Two-Tower user mapping: {len(user_to_idx)} users")
-    logger.info(f"User ID range: {min(user_to_idx.keys())} to {max(user_to_idx.keys())}")
+    logger.info(
+        f"User ID range: {min(user_to_idx.keys())} to {max(user_to_idx.keys())}"
+    )
     logger.info(f"Index range: 0 to {len(user_to_idx) - 1}")
 
     return user_to_idx
@@ -72,7 +74,9 @@ def load_twotower_item_mapping(train_ratings_path: Path) -> Dict[int, int]:
     item_to_idx = {int(iid): idx for idx, iid in enumerate(unique_items)}
 
     logger.info(f"Loaded Two-Tower item mapping: {len(item_to_idx)} items")
-    logger.info(f"Item ID range: {min(item_to_idx.keys())} to {max(item_to_idx.keys())}")
+    logger.info(
+        f"Item ID range: {min(item_to_idx.keys())} to {max(item_to_idx.keys())}"
+    )
     logger.info(f"Index range: 0 to {len(item_to_idx) - 1}")
 
     return item_to_idx
@@ -279,10 +283,16 @@ class EnsembleRecommender:
 
         # Detect actual feature dimensions from checkpoint
         state_dict = checkpoint["model_state_dict"]
-        actual_user_feat_dim = state_dict.get("user_tower.feature_transform.weight", torch.zeros(32, 0)).shape[1]
-        actual_movie_feat_dim = state_dict.get("movie_tower.feature_transform.weight", torch.zeros(32, 0)).shape[1]
+        actual_user_feat_dim = state_dict.get(
+            "user_tower.feature_transform.weight", torch.zeros(32, 0)
+        ).shape[1]
+        actual_movie_feat_dim = state_dict.get(
+            "movie_tower.feature_transform.weight", torch.zeros(32, 0)
+        ).shape[1]
 
-        logger.info(f"Detected feature dims from checkpoint: user={actual_user_feat_dim}, movie={actual_movie_feat_dim}")
+        logger.info(
+            f"Detected feature dims from checkpoint: user={actual_user_feat_dim}, movie={actual_movie_feat_dim}"
+        )
 
         # Override config with actual dimensions (update self.twotower_config)
         self.twotower_config["user_feature_dim"] = actual_user_feat_dim
@@ -318,7 +328,9 @@ class EnsembleRecommender:
         movie_feat_dim = self.twotower_config.get("movie_feature_dim", 0)
 
         if user_feat_dim == 0 and movie_feat_dim == 0:
-            logger.info("Two-Tower model was trained without features. Skipping feature loading.")
+            logger.info(
+                "Two-Tower model was trained without features. Skipping feature loading."
+            )
             self.user_features = None
             self.movie_features = None
             return
@@ -420,7 +432,9 @@ class EnsembleRecommender:
                         twotower_indices.append(self.twotower_user_to_idx[uid])
                     else:
                         # User not in Two-Tower training - skip or use default
-                        logger.warning(f"User {uid} not in Two-Tower mapping, using index 0")
+                        logger.warning(
+                            f"User {uid} not in Two-Tower mapping, using index 0"
+                        )
                         twotower_indices.append(0)
 
                 user_ids_tensor = torch.tensor(twotower_indices, device=self.device)
@@ -456,7 +470,9 @@ class EnsembleRecommender:
                     if iid in self.twotower_item_to_idx:
                         twotower_indices.append(self.twotower_item_to_idx[iid])
                     else:
-                        logger.warning(f"Item {iid} not in Two-Tower mapping, using index 0")
+                        logger.warning(
+                            f"Item {iid} not in Two-Tower mapping, using index 0"
+                        )
                         twotower_indices.append(0)
 
                 item_ids_tensor = torch.tensor(twotower_indices, device=self.device)
@@ -478,8 +494,12 @@ class EnsembleRecommender:
 
             # Weighted combination - NOW ALIGNED!
             logger.info("Combining embeddings...")
-            logger.info(f"LightGCN shapes: users={lightgcn_user_emb.shape}, items={lightgcn_item_emb.shape}")
-            logger.info(f"Two-Tower shapes: users={twotower_user_emb.shape}, items={twotower_item_emb.shape}")
+            logger.info(
+                f"LightGCN shapes: users={lightgcn_user_emb.shape}, items={lightgcn_item_emb.shape}"
+            )
+            logger.info(
+                f"Two-Tower shapes: users={twotower_user_emb.shape}, items={twotower_item_emb.shape}"
+            )
 
             self.user_embeddings = (
                 self.lightgcn_weight * lightgcn_user_emb
@@ -675,10 +695,14 @@ class EnsembleRecommender:
 
         # Save mappings (convert numpy int types to Python int for JSON)
         with open(output_dir / "user_to_idx.json", "w") as f:
-            user_to_idx_serializable = {int(k): int(v) for k, v in self.user_to_idx.items()}
+            user_to_idx_serializable = {
+                int(k): int(v) for k, v in self.user_to_idx.items()
+            }
             json.dump(user_to_idx_serializable, f)
         with open(output_dir / "item_to_idx.json", "w") as f:
-            item_to_idx_serializable = {int(k): int(v) for k, v in self.item_to_idx.items()}
+            item_to_idx_serializable = {
+                int(k): int(v) for k, v in self.item_to_idx.items()
+            }
             json.dump(item_to_idx_serializable, f)
 
         logger.info("Embeddings saved successfully!")

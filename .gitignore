@@ -95,17 +95,17 @@ Thumbs.db
 *.zip
 root@*
 
-# Experimental/temporary scripts
-*_temp.py
-*_test.py
-*_draft.py
-fix_*.py
-test_*.py
-analyze_*.py
-generate_*_safe.py
-generate_*_simple.py
-train_*_fixed.py
-train_*_quick.py
+# Experimental/temporary scripts (root directory only)
+/*_temp.py
+/*_test.py
+/*_draft.py
+/fix_*.py
+/test_*.py
+/analyze_*.py
+/generate_*_safe.py
+/generate_*_simple.py
+/train_*_fixed.py
+/train_*_quick.py
 
 # Documentation (private)
 AGENT_ARCHITECTURE.md

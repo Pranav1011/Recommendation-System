@@ -11,14 +11,12 @@ Embeddings will be used for:
 import argparse
 import logging
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import pandas as pd
 import torch
 from tqdm import tqdm
-
-from src.models.two_tower import TwoTowerModel
 
 # Configure logging
 logging.basicConfig(
@@ -79,7 +77,7 @@ class EmbeddingGenerator:
         self.n_users = config["n_users"]
         self.n_movies = config["n_movies"]
 
-        logger.info(f"Model loaded successfully")
+        logger.info("Model loaded successfully")
         logger.info(f"  - Users: {self.n_users:,}")
         logger.info(f"  - Movies: {self.n_movies:,}")
 
@@ -143,7 +141,6 @@ class EmbeddingGenerator:
             range(0, self.n_users, batch_size), desc="User embeddings"
         ):
             end_idx = min(start_idx + batch_size, self.n_users)
-            batch_size_actual = end_idx - start_idx
 
             # Create user IDs batch
             user_ids = torch.arange(start_idx, end_idx, device=self.device)

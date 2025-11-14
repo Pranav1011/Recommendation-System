@@ -12,9 +12,6 @@ from typing import Dict
 
 import pandas as pd
 
-# Add project root to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-
 from src.evaluation.evaluate_model import (
     compute_metrics,
     create_user_movie_mappings,
@@ -22,6 +19,10 @@ from src.evaluation.evaluate_model import (
     prepare_ground_truth,
 )
 from src.models.ensemble import create_ensemble
+
+# Add project root to path if needed
+if str(Path(__file__).parent.parent.parent) not in sys.path:
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 # Configure logging
 logging.basicConfig(
@@ -45,10 +46,7 @@ def evaluate_single_model(
     logger.info(f"{'=' * 60}")
 
     # Import here to avoid circular dependency
-    from src.evaluation.evaluate_model import (
-        load_embeddings,
-        get_top_k_recommendations,
-    )
+    from src.evaluation.evaluate_model import get_top_k_recommendations, load_embeddings
 
     # Load embeddings
     user_emb, movie_emb = load_embeddings(Path(embeddings_dir))
@@ -59,7 +57,9 @@ def evaluate_single_model(
     )
 
     # Compute metrics
-    metrics = compute_metrics(predictions, ground_truth, relevance_scores, n_items, k_values)
+    metrics = compute_metrics(
+        predictions, ground_truth, relevance_scores, n_items, k_values
+    )
 
     return metrics
 
@@ -76,7 +76,7 @@ def evaluate_ensemble_model(
 ) -> Dict[str, float]:
     """Evaluate ensemble model."""
     logger.info(f"\n{'=' * 60}")
-    logger.info(f"Evaluating: ENSEMBLE")
+    logger.info("Evaluating: ENSEMBLE")
     logger.info(f"Method: {combination_method}")
     logger.info(f"Weights: {weights}")
     logger.info(f"{'=' * 60}")
@@ -88,12 +88,16 @@ def evaluate_ensemble_model(
     predictions, _ = ensemble.get_recommendations(user_indices, k=max(k_values))
 
     # Compute metrics
-    metrics = compute_metrics(predictions, ground_truth, relevance_scores, n_items, k_values)
+    metrics = compute_metrics(
+        predictions, ground_truth, relevance_scores, n_items, k_values
+    )
 
     return metrics
 
 
-def compare_models(results: Dict[str, Dict[str, float]], k_values: list) -> pd.DataFrame:
+def compare_models(
+    results: Dict[str, Dict[str, float]], k_values: list
+) -> pd.DataFrame:
     """Create comparison table."""
     rows = []
 
@@ -160,13 +164,17 @@ def print_results(results: Dict[str, Dict[str, float]], k_values: list) -> None:
         individual_models = {k: v for k, v in results.items() if k != "ENSEMBLE"}
 
         for metric_name in ["ndcg@10", "recall@10", "hit_rate@10", "coverage"]:
-            best_individual = max(individual_models.values(), key=lambda x: x[metric_name])
+            best_individual = max(
+                individual_models.values(), key=lambda x: x[metric_name]
+            )
             ensemble_value = ensemble_metrics[metric_name]
             best_individual_value = best_individual[metric_name]
 
             if best_individual_value > 0:
                 improvement = (
-                    (ensemble_value - best_individual_value) / best_individual_value * 100
+                    (ensemble_value - best_individual_value)
+                    / best_individual_value
+                    * 100
                 )
                 logger.info(
                     f"{metric_name}: {ensemble_value:.4f} vs {best_individual_value:.4f} "
@@ -300,12 +308,6 @@ def main():
             relevance_scores,
             len(movie_to_idx),
             k_values,
-        )
-
-        # Analyze contributions
-        ensemble = create_ensemble(model_configs, weights, args.combination_method)
-        contributions = ensemble.analyze_model_contributions(
-            user_indices[:100], k=10  # Sample 100 users
         )
 
     # Print results
