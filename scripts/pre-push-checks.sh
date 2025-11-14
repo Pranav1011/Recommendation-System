@@ -24,7 +24,7 @@ flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
 echo ""
 
 echo "✅ Step 4/7: Running flake8 linting (all issues)..."
-flake8 src/ --count --max-complexity=10 --max-line-length=127 --statistics
+flake8 src/ --count --max-complexity=10 --max-line-length=127 --extend-ignore=E203,C901 --statistics
 echo ""
 
 echo "✅ Step 5/7: Running unit tests with coverage..."

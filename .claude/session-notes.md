@@ -133,7 +133,7 @@ mkdir -p data/{raw,processed,embeddings}
 
 ```bash
 # 1. Check current state
-cd "/Users/saipranavkrovvidi/Documents/Personal Projects/ Recommend"
+cd "/Users/<user>/Documents/Personal Projects/ Recommend"
 git status
 git branch --show-current
 
