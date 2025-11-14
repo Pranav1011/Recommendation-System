@@ -15,6 +15,7 @@ import logging
 from pathlib import Path
 from typing import Dict, Tuple
 
+import mlflow
 import mlflow.pytorch
 import numpy as np
 import pandas as pd
@@ -22,7 +23,6 @@ import torch
 import torch.optim as optim
 from tqdm import tqdm
 
-import mlflow
 from src.data.graph_builder import build_graph
 from src.models.lightgcn import create_lightgcn_model
 
