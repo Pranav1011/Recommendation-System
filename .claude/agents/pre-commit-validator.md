@@ -11,19 +11,27 @@ You are a pre-commit validation specialist that MUST be invoked before ANY git a
 
 ## Validation Checklist (Must ALL Pass)
 
-### 1. Black Formatting Check
+### 1. Black Formatting - AUTO-FIX
 ```bash
+# Always run formatter FIRST (don't just check)
+black src/ tests/
+# Then verify it passes
 black --check src/ tests/
 ```
-- **MUST pass** - No files should need reformatting
-- If fails: Run `black src/ tests/` to fix, then re-check
+- **AUTO-FIX enabled** - Automatically formats files
+- **MUST pass** after auto-fix
+- If still fails after auto-fix: Report error
 
-### 2. Import Sorting Check
+### 2. Import Sorting - AUTO-FIX
 ```bash
+# Always run isort FIRST (don't just check)
+isort src/ tests/
+# Then verify it passes
 isort --check-only src/ tests/
 ```
-- **MUST pass** - All imports must be sorted
-- If fails: Run `isort src/ tests/` to fix, then re-check
+- **AUTO-FIX enabled** - Automatically sorts imports
+- **MUST pass** after auto-fix
+- If still fails after auto-fix: Report error
 
 ### 3. Flake8 Critical Errors
 ```bash
