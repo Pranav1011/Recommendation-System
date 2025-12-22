@@ -167,29 +167,36 @@ class HardNegativeSampler:
         n_genre = int(n_negatives * self.genre_weight)
         n_random = n_negatives - n_popular - n_genre
 
-        negatives = []
+        negatives = set()
 
         # 1. Sample popular negatives
         popular_negatives = self._sample_popular_negatives(
             user_id, rated_items, n_popular
         )
-        negatives.extend(popular_negatives)
+        negatives.update(popular_negatives)
 
-        # 2. Sample genre-based negatives
-        genre_negatives = self._sample_genre_negatives(user_id, rated_items, n_genre)
-        negatives.extend(genre_negatives)
+        # 2. Sample genre-based negatives (excluding already sampled)
+        genre_negatives = self._sample_genre_negatives(
+            user_id, rated_items | negatives, n_genre
+        )
+        negatives.update(genre_negatives)
 
-        # 3. Sample random negatives
-        random_negatives = self._sample_random_negatives(rated_items, n_random)
-        negatives.extend(random_negatives)
+        # 3. Sample random negatives (excluding already sampled)
+        random_negatives = self._sample_random_negatives(
+            rated_items | negatives, n_random
+        )
+        negatives.update(random_negatives)
+
+        # Convert to list for padding
+        negatives_list = list(negatives)
 
         # Ensure we have exactly n_negatives (pad with random if needed)
-        while len(negatives) < n_negatives:
+        while len(negatives_list) < n_negatives:
             candidate = np.random.randint(0, self.n_movies)
-            if candidate not in rated_items and candidate not in negatives:
-                negatives.append(candidate)
+            if candidate not in rated_items and candidate not in negatives_list:
+                negatives_list.append(candidate)
 
-        return np.array(negatives[:n_negatives])
+        return np.array(negatives_list[:n_negatives])
 
     def _sample_popular_negatives(
         self, user_id: int, rated_items: Set[int], n_samples: int

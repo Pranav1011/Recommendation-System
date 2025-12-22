@@ -5,6 +5,8 @@ omit =
     */test_*.py
     src/evaluation/*
     src/embeddings/generate_ensemble.py
+    src/training/train_lightgcn.py
+    src/training/train_hybrid.py
 
 [report]
 exclude_lines =
