@@ -10,22 +10,26 @@ import {
   getColdStartRecommendations,
   getSimilarMovies,
 } from "@/lib/api";
+import {
+  ALL_MOVIES,
+  getMoviesByGenre,
+  searchMoviesByTitle,
+  SEED_MOVIES_FOR_RATING,
+  type MovieData,
+} from "@/lib/movies-data";
 
-// Sample movies for cold start (popular movies to rate)
-const SEED_MOVIES = [
-  { movie_id: 318, title: "Shawshank Redemption, The (1994)", genres: ["Crime", "Drama"] },
-  { movie_id: 296, title: "Pulp Fiction (1994)", genres: ["Comedy", "Crime", "Drama"] },
-  { movie_id: 356, title: "Forrest Gump (1994)", genres: ["Comedy", "Drama", "Romance"] },
-  { movie_id: 593, title: "Silence of the Lambs, The (1991)", genres: ["Crime", "Horror", "Thriller"] },
-  { movie_id: 260, title: "Star Wars: Episode IV (1977)", genres: ["Action", "Adventure", "Sci-Fi"] },
-  { movie_id: 480, title: "Jurassic Park (1993)", genres: ["Action", "Adventure", "Sci-Fi"] },
-  { movie_id: 110, title: "Braveheart (1995)", genres: ["Action", "Drama", "War"] },
-  { movie_id: 527, title: "Schindler's List (1993)", genres: ["Drama", "War"] },
-  { movie_id: 1, title: "Toy Story (1995)", genres: ["Adventure", "Animation", "Children"] },
-  { movie_id: 2571, title: "Matrix, The (1999)", genres: ["Action", "Sci-Fi", "Thriller"] },
-  { movie_id: 858, title: "Godfather, The (1972)", genres: ["Crime", "Drama"] },
-  { movie_id: 50, title: "Usual Suspects, The (1995)", genres: ["Crime", "Mystery", "Thriller"] },
-];
+// Convert MovieData to MovieRecommendation
+function toMovieRecommendation(movie: MovieData, score?: number): MovieRecommendation {
+  return {
+    movie_id: movie.movie_id,
+    title: movie.title,
+    genres: movie.genres,
+    year: movie.year,
+    score: score ?? 0.9,
+    avg_rating: movie.avg_rating,
+    popularity: movie.popularity,
+  };
+}
 
 type View = "home" | "coldstart" | "recommendations" | "similar" | "search";
 
@@ -50,7 +54,7 @@ export default function Home() {
   const [similarMovies, setSimilarMovies] = useState<MovieRecommendation[]>([]);
   const [similarToMovie, setSimilarToMovie] = useState<string>("");
 
-  const genres = ["Action", "Comedy", "Drama", "Horror", "Sci-Fi", "Romance", "Thriller", "Animation"];
+  const genres = ["Action", "Comedy", "Drama", "Horror", "Sci-Fi", "Romance", "Thriller", "Animation", "Adventure", "Crime"];
 
   // Load popular movies on mount
   useEffect(() => {
@@ -61,19 +65,14 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      const response = await getPopularMovies({ limit: 20, genre: genre || undefined });
+      const response = await getPopularMovies({ limit: 50, genre: genre || undefined });
       setPopularMovies(response.popular_movies);
       setSelectedGenre(genre || null);
-    } catch (err) {
-      // Use demo data if API is not available
-      setPopularMovies(SEED_MOVIES.map((m, i) => ({
-        ...m,
-        score: 1 - i * 0.05,
-        year: parseInt(m.title.match(/\((\d{4})\)/)?.[1] || "2000"),
-        avg_rating: 4.5 - i * 0.1,
-        popularity: 80000 - i * 5000,
-      })));
-      console.log("Using demo data:", err);
+    } catch {
+      // Use local movie data
+      const movies = getMoviesByGenre(genre || null, 50);
+      setPopularMovies(movies.map(m => toMovieRecommendation(m)));
+      setSelectedGenre(genre || null);
     } finally {
       setLoading(false);
     }
@@ -92,19 +91,18 @@ export default function Home() {
     setView("search");
 
     try {
-      const response = await searchMovies(query, 20);
+      const response = await searchMovies(query, 30);
       setSearchResults(response.results);
-    } catch (err) {
-      // Filter seed movies as fallback
-      const filtered = SEED_MOVIES.filter(m =>
-        m.title.toLowerCase().includes(query.toLowerCase())
-      ).map(m => ({
-        ...m,
-        year: parseInt(m.title.match(/\((\d{4})\)/)?.[1] || "2000"),
+    } catch {
+      // Use local search
+      const results = searchMoviesByTitle(query, 30);
+      setSearchResults(results.map(m => ({
+        movie_id: m.movie_id,
+        title: m.title,
+        genres: m.genres,
+        year: m.year,
         relevance_score: 1,
-      }));
-      setSearchResults(filtered);
-      console.log("Using demo search:", err);
+      })));
     } finally {
       setLoading(false);
     }
@@ -137,18 +135,41 @@ export default function Home() {
       const response = await getColdStartRecommendations(ratingsList);
       setRecommendations(response.recommendations);
       setView("recommendations");
-    } catch (err) {
-      // Generate demo recommendations
-      const unrated = SEED_MOVIES.filter(m => !ratings[m.movie_id]);
-      setRecommendations(unrated.slice(0, 10).map((m, i) => ({
-        ...m,
-        score: 0.95 - i * 0.05,
-        year: parseInt(m.title.match(/\((\d{4})\)/)?.[1] || "2000"),
-        avg_rating: 4.5,
-        popularity: 50000,
-      })));
+    } catch {
+      // Generate recommendations based on rated movies' genres
+      const ratedMovieIds = new Set(ratingsList.map(r => r.movieId));
+      const ratedMovies = ALL_MOVIES.filter(m => ratedMovieIds.has(m.movie_id));
+
+      // Get preferred genres from highly rated movies
+      const genreScores: Record<string, number> = {};
+      ratingsList.forEach(({ movieId, rating }) => {
+        const movie = ALL_MOVIES.find(m => m.movie_id === movieId);
+        if (movie && rating >= 3) {
+          movie.genres.forEach(g => {
+            genreScores[g] = (genreScores[g] || 0) + rating;
+          });
+        }
+      });
+
+      // Find similar movies user hasn't rated
+      const unratedMovies = ALL_MOVIES.filter(m => !ratedMovieIds.has(m.movie_id));
+      const scored = unratedMovies.map(m => {
+        let score = 0;
+        m.genres.forEach(g => {
+          score += genreScores[g] || 0;
+        });
+        return { movie: m, score: score / (m.genres.length || 1) };
+      });
+
+      // Sort by score and take top 20
+      scored.sort((a, b) => b.score - a.score);
+      const topMovies = scored.slice(0, 20);
+      const maxScore = topMovies[0]?.score || 1;
+
+      setRecommendations(topMovies.map(({ movie, score }) =>
+        toMovieRecommendation(movie, score / maxScore)
+      ));
       setView("recommendations");
-      console.log("Using demo recommendations:", err);
     } finally {
       setLoading(false);
     }
@@ -158,29 +179,32 @@ export default function Home() {
     setLoading(true);
     setError(null);
 
-    const movie = [...popularMovies, ...SEED_MOVIES.map(m => ({ ...m, score: 1, year: null, avg_rating: null, popularity: null }))]
-      .find(m => m.movie_id === movieId);
+    const movie = ALL_MOVIES.find(m => m.movie_id === movieId);
     setSimilarToMovie(movie?.title || `Movie ${movieId}`);
 
     try {
-      const response = await getSimilarMovies(movieId, 10);
+      const response = await getSimilarMovies(movieId, 15);
       setSimilarMovies(response.similar_movies);
       setView("similar");
-    } catch (err) {
-      // Demo similar movies
-      const similar = SEED_MOVIES
-        .filter(m => m.movie_id !== movieId)
-        .slice(0, 10)
-        .map((m, i) => ({
-          ...m,
-          score: 0.9 - i * 0.05,
-          year: parseInt(m.title.match(/\((\d{4})\)/)?.[1] || "2000"),
-          avg_rating: 4.3,
-          popularity: 40000,
-        }));
-      setSimilarMovies(similar);
+    } catch {
+      // Find similar movies by genre
+      if (movie) {
+        const movieGenres = new Set(movie.genres);
+        const similar = ALL_MOVIES
+          .filter(m => m.movie_id !== movieId)
+          .map(m => {
+            const commonGenres = m.genres.filter(g => movieGenres.has(g)).length;
+            return { movie: m, similarity: commonGenres / Math.max(m.genres.length, movie.genres.length) };
+          })
+          .filter(({ similarity }) => similarity > 0)
+          .sort((a, b) => b.similarity - a.similarity || b.movie.popularity - a.movie.popularity)
+          .slice(0, 15);
+
+        setSimilarMovies(similar.map(({ movie: m, similarity }) =>
+          toMovieRecommendation(m, similarity)
+        ));
+      }
       setView("similar");
-      console.log("Using demo similar:", err);
     } finally {
       setLoading(false);
     }
@@ -298,9 +322,10 @@ export default function Home() {
             <section>
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                 {selectedGenre ? `Popular ${selectedGenre} Movies` : "Popular Movies"}
+                <span className="text-sm font-normal text-gray-500 ml-2">({popularMovies.length} movies)</span>
               </h2>
               {loading ? (
-                <MovieGridSkeleton count={10} />
+                <MovieGridSkeleton count={20} />
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
                   {popularMovies.map(movie => (
@@ -349,7 +374,7 @@ export default function Home() {
 
             {/* Movies to rate */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {SEED_MOVIES.map(movie => (
+              {SEED_MOVIES_FOR_RATING.map(movie => (
                 <div
                   key={movie.movie_id}
                   className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 flex gap-4"
@@ -369,6 +394,7 @@ export default function Home() {
                     <h3 className="font-semibold text-gray-900 dark:text-white line-clamp-2 mb-1">
                       {movie.title}
                     </h3>
+                    <p className="text-sm text-gray-500 mb-1">{movie.year}</p>
                     <div className="flex flex-wrap gap-1 mb-3">
                       {movie.genres.slice(0, 2).map(genre => (
                         <span
@@ -426,7 +452,7 @@ export default function Home() {
             </div>
 
             {loading ? (
-              <MovieGridSkeleton count={10} />
+              <MovieGridSkeleton count={20} />
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
                 {recommendations.map((movie, index) => (
@@ -473,7 +499,7 @@ export default function Home() {
             </div>
 
             {loading ? (
-              <MovieGridSkeleton count={10} />
+              <MovieGridSkeleton count={15} />
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
                 {similarMovies.map((movie, index) => (
@@ -511,7 +537,7 @@ export default function Home() {
             </div>
 
             {loading ? (
-              <MovieGridSkeleton count={10} />
+              <MovieGridSkeleton count={20} />
             ) : searchResults.length === 0 ? (
               <div className="text-center py-12">
                 <Search className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
