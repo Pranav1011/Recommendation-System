@@ -2,6 +2,15 @@
 
 A production-ready recommendation system built with PyTorch, Qdrant vector database, FastAPI, and a modern Next.js frontend. Processes 25M+ user-item interactions to deliver sub-100ms personalized recommendations.
 
+## 🌐 Live Demo
+
+**[https://recommendation-system-henna.vercel.app/](https://recommendation-system-henna.vercel.app/)**
+
+- Browse 120+ movies from 1960s to 2024
+- Filter by genre (Action, Comedy, Drama, Horror, Sci-Fi, etc.)
+- Rate movies and get personalized recommendations
+- Find similar movies based on your selections
+
 ## 🎯 Features
 
 - **Modern Frontend**: Next.js/React UI deployed on Vercel for beautiful user experience
