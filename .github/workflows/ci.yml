@@ -37,7 +37,7 @@ jobs:
         run: black --check src/ tests/
 
       - name: Check import sorting (isort)
-        run: isort --check-only src/ tests/
+        run: isort --check-only --profile black src/ tests/
 
       - name: Lint with flake8
         run: |
