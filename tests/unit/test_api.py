@@ -91,6 +91,7 @@ def mock_movie_metadata():
 @pytest.fixture
 def client(mock_qdrant, mock_redis, mock_movie_metadata):
     """Create a test client with mocked dependencies."""
+    import src.api.dependencies as deps
     from src.api.dependencies import (
         get_movie_metadata,
         get_qdrant_manager,
@@ -112,11 +113,16 @@ def client(mock_qdrant, mock_redis, mock_movie_metadata):
     app.dependency_overrides[get_redis_cache] = override_redis
     app.dependency_overrides[get_movie_metadata] = override_metadata
 
+    # Also set the global _movie_metadata to mock data for direct function calls
+    original_metadata = deps._movie_metadata
+    deps._movie_metadata = mock_movie_metadata
+
     client = TestClient(app)
     yield client
 
-    # Clean up overrides
+    # Clean up overrides and restore globals
     app.dependency_overrides.clear()
+    deps._movie_metadata = original_metadata
 
 
 # ==================== Root & Health Endpoints ====================
@@ -539,14 +545,14 @@ class TestPopularMovies:
         assert response.status_code == 200
         data = response.json()
         assert data["cached"] is False
-        assert len(data["popular_movies"]) <= 3  # May be less if fewer movies available
+        # Mock metadata has 4 movies, limit is 3
+        assert len(data["popular_movies"]) == 3
 
-        # Verify sorted by popularity if multiple results
-        if len(data["popular_movies"]) > 1:
-            assert (
-                data["popular_movies"][0]["popularity"]
-                >= data["popular_movies"][1]["popularity"]
-            )
+        # Verify sorted by popularity (descending)
+        assert (
+            data["popular_movies"][0]["popularity"]
+            >= data["popular_movies"][1]["popularity"]
+        )
 
     def test_popular_movies_with_genre_filter(
         self, client, mock_redis, mock_movie_metadata
@@ -560,32 +566,51 @@ class TestPopularMovies:
         data = response.json()
         assert data["genre_filter"] == "Action"
 
-        # Verify all results contain Action genre (if any results)
-        if len(data["popular_movies"]) > 0:
-            for movie in data["popular_movies"]:
-                assert "Action" in movie["genres"]
+        # Mock metadata has 2 movies with Action genre (movieId 1 and 100)
+        assert len(data["popular_movies"]) == 2
 
-    def test_popular_movies_no_popularity_data(self, client, mock_redis):
+        # Verify all results contain Action genre
+        for movie in data["popular_movies"]:
+            assert "Action" in movie["genres"]
+
+    def test_popular_movies_no_popularity_data(self, mock_redis):
         """Test popular movies when popularity data missing."""
+        import src.api.dependencies as deps
+        from src.api.dependencies import get_qdrant_manager, get_redis_cache
+        from src.api.main import app
+
         mock_redis.get_popular_items.return_value = None
 
-        with patch(
-            "src.api.dependencies.get_movie_metadata", new_callable=AsyncMock
-        ) as mock_metadata:
-            # Return DataFrame without popularity column
-            mock_metadata.return_value = pd.DataFrame(
-                {
-                    "movieId": [1, 2],
-                    "title": ["Movie 1", "Movie 2"],
-                    "genres": ["Action", "Drama"],
-                }
-            )
+        # Create DataFrame without popularity column
+        no_popularity_metadata = pd.DataFrame(
+            {
+                "movieId": [1, 2],
+                "title": ["Movie 1", "Movie 2"],
+                "genres": ["Action", "Drama"],
+            }
+        )
 
+        # Save original and set test data
+        original_metadata = deps._movie_metadata
+        deps._movie_metadata = no_popularity_metadata
+
+        # Override dependencies
+        async def override_redis():
+            return mock_redis
+
+        app.dependency_overrides[get_redis_cache] = override_redis
+
+        try:
+            client = TestClient(app)
             response = client.get("/api/v1/movies/popular")
 
             assert response.status_code == 503
             data = response.json()
             assert "NO_POPULARITY_DATA" in data["detail"]["error_code"]
+        finally:
+            # Restore original
+            deps._movie_metadata = original_metadata
+            app.dependency_overrides.clear()
 
 
 # ==================== Movie Search Endpoint ====================
@@ -629,12 +654,13 @@ class TestMovieSearch:
 
     def test_search_movies_no_results(self, client, mock_movie_metadata):
         """Test search with no matching results."""
-        response = client.get("/api/v1/movies/search?query=XyZabc123NonExistent")
+        # Use a query that definitely won't match any movie in mock_movie_metadata
+        # Mock data has: "Movie 1 (2020)", "Movie 2 (2019)", "Movie 3 (2021)", "Test Movie (2000)"
+        response = client.get("/api/v1/movies/search?query=Nonexistent")
 
         assert response.status_code == 200
         data = response.json()
         assert data["count"] == 0
-        # Allow empty results or no results
         assert len(data["results"]) == 0
 
     def test_search_movies_missing_query(self, client):
@@ -677,7 +703,8 @@ class TestSystemStats:
         data = response.json()
         assert "total_users" in data
         assert "total_movies" in data
-        assert data["total_movies"] == len(mock_movie_metadata)  # From mock metadata
+        # Mock metadata has 4 movies
+        assert data["total_movies"] == 4
         assert "cache_stats" in data
         assert "qdrant_stats" in data
         assert "hit_rate" in data["cache_stats"]
