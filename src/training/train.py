@@ -59,7 +59,7 @@ class Trainer:
         self._create_loss_and_optimizer()
 
         # Training state
-        self.best_val_loss = float("in")
+        self.best_val_loss = float("inf")
         self.patience_counter = 0
         self.current_epoch = 0
 

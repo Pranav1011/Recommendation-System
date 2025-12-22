@@ -14,7 +14,7 @@ import hashlib
 import logging
 import time
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import pandas as pd
@@ -111,7 +111,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "recommendation-api",
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     }
 
 
@@ -202,7 +202,7 @@ async def deep_health_check(
     return DeepHealthResponse(
         status="healthy" if overall_healthy else "degraded",
         services=services,
-        timestamp=datetime.utcnow().isoformat() + "Z",
+        timestamp=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     )
 
 
@@ -723,6 +723,14 @@ async def search_movies(
         metadata["title"].str.lower().str.contains(query_lower, na=False)
     ]
 
+    # Handle empty results early
+    if matches.empty:
+        return MovieSearchResponse(
+            query=query,
+            results=[],
+            count=0,
+        )
+
     # Rank by how early the query appears in the title
     def get_relevance(title):
         title_lower = title.lower()
@@ -732,6 +740,7 @@ async def search_movies(
             return 1.0 / (1 + position)
         return 0.0
 
+    matches = matches.copy()  # Avoid SettingWithCopyWarning
     matches["relevance"] = matches["title"].apply(get_relevance)
     matches = matches.nlargest(limit, "relevance")
 
@@ -808,7 +817,7 @@ async def system_stats(
         total_movies=total_movies,
         cache_stats=cache_stats,
         qdrant_stats=qdrant_stats,
-        timestamp=datetime.utcnow().isoformat() + "Z",
+        timestamp=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
     )
 
 
