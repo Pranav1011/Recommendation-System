@@ -117,3 +117,7 @@ PROJECT_SPEC.md
 
 # Old Docs directory (moved to docs/)
 Docs/
+
+# Local assistant notes (not published)
+CLAUDE.md
+.claude/
